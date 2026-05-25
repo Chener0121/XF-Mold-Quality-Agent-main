@@ -5,7 +5,8 @@
       "Bash(uv init *)",
       "Bash(uv sync *)",
       "Bash(uv run *)",
-      "Bash(docker compose logs *)"
+      "Bash(docker compose logs *)",
+      "Bash(docker compose exec *)"
     ]
   }
 }

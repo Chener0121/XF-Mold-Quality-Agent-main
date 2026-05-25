@@ -63,8 +63,8 @@ class HeadingStack:
         return " > ".join(self._stack) if self._stack else ""
 
 
-SHORT_BLOCK_THRESHOLD = 30  # ≤30 字符视为短块
-MERGE_MAX_LENGTH = 600      # 合并后最大长度
+SHORT_BLOCK_THRESHOLD = 150  # ≤150 字符视为短块
+MERGE_MAX_LENGTH = 1000      # 合并后最大长度
 
 
 class SemanticProcessor:
