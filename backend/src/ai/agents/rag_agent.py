@@ -8,27 +8,31 @@ from src.ai.prompts.rag_prompt import (
     QUALITY_AGENT_PROMPT,
     RD_AGENT_PROMPT,
 )
-from src.ai.tools.knowledge_search import knowledge_search
+from src.ai.tools.knowledge_search import general_search, quality_search, rd_search
 from src.core.llm_client import get_chat_llm
 from src.core.logger import get_logger
 
 logger = get_logger(__name__)
 
+MAX_RECURSION = 6  # 最多 3 轮工具调用（每轮 = AIMessage + ToolMessage）
+
 _agents: dict[str, object] = {}
+
+_AGENT_CONFIG = {
+    "quality": {"prompt": QUALITY_AGENT_PROMPT, "tools": [quality_search]},
+    "rd": {"prompt": RD_AGENT_PROMPT, "tools": [rd_search]},
+    "general": {"prompt": GENERAL_AGENT_PROMPT, "tools": [general_search]},
+}
 
 
 def _get_agent(domain: str | None) -> object:
     key = domain or "general"
     if key not in _agents:
-        prompt_map = {
-            "quality": QUALITY_AGENT_PROMPT,
-            "rd": RD_AGENT_PROMPT,
-            "general": GENERAL_AGENT_PROMPT,
-        }
+        cfg = _AGENT_CONFIG[key]
         _agents[key] = create_react_agent(
             model=get_chat_llm(),
-            tools=[knowledge_search],
-            prompt=prompt_map[key],
+            tools=cfg["tools"],
+            prompt=cfg["prompt"],
         )
     return _agents[key]
 
@@ -36,7 +40,10 @@ def _get_agent(domain: str | None) -> object:
 def ask(query: str, domain: str | None = None) -> dict:
     """调用对应领域的 RAG Agent 并返回结果"""
     agent = _get_agent(domain)
-    result = agent.invoke({"messages": [HumanMessage(content=query)]})
+    result = agent.invoke(
+        {"messages": [HumanMessage(content=query)]},
+        config={"recursion_limit": MAX_RECURSION},
+    )
 
     messages = result["messages"]
 
@@ -52,7 +59,7 @@ def ask(query: str, domain: str | None = None) -> dict:
     for msg in messages:
         if isinstance(msg, ToolMessage):
             tool_calls.append({
-                "tool_name": msg.name or "knowledge_search",
+                "tool_name": msg.name or "",
                 "content_preview": msg.content[:500] if msg.content else "",
             })
 
