@@ -24,7 +24,7 @@ async def rag_query(request: RAGQueryRequest):
 
     tool_calls = result.get("tool_calls", [])
     retrievals = [ToolCallItem(**tc) for tc in tool_calls]
-    context_preview = "\n---\n".join(tc["content_preview"] for tc in tool_calls)[:500]
+    context_preview = "\n---\n".join(tc["content_preview"] for tc in tool_calls)
 
     _get_trace_logger().log(RetrievalTrace(
         query=request.query,

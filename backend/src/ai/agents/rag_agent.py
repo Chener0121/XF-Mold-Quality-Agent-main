@@ -14,7 +14,7 @@ from src.core.logger import get_logger
 
 logger = get_logger(__name__)
 
-MAX_RECURSION = 6  # 最多 3 轮工具调用（每轮 = AIMessage + ToolMessage）
+MAX_RECURSION = 10  # 安全上限：3 次搜索 × 2 步 + 最终回答 ≈ 7 步
 
 _agents: dict[str, object] = {}
 
@@ -60,7 +60,7 @@ def ask(query: str, domain: str | None = None) -> dict:
         if isinstance(msg, ToolMessage):
             tool_calls.append({
                 "tool_name": msg.name or "",
-                "content_preview": msg.content[:500] if msg.content else "",
+                "content_preview": msg.content or "",
             })
 
     logger.info("Agent 完成: domain=%s, messages=%d, tool_calls=%d", domain, len(messages), len(tool_calls))
