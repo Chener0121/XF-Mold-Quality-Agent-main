@@ -1,4 +1,5 @@
 import asyncio
+import shutil
 import tempfile
 import uuid
 from pathlib import Path
@@ -23,7 +24,7 @@ def _get_service() -> DocumentService:
     return _service
 
 
-@router.post("/upload", response_model=DocumentResponse)
+@router.post("", response_model=DocumentResponse)
 async def upload_document(file: UploadFile):
     """上传文档，立即返回任务 ID，后台异步处理"""
     suffix = Path(file.filename or "").suffix.lower()
@@ -72,7 +73,6 @@ async def upload_document(file: UploadFile):
             _tasks[task_id].stage = _tasks[task_id].stage
             _tasks[task_id].progress = {"error": str(e)}
         finally:
-            import shutil
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
     asyncio.create_task(_run())
@@ -84,7 +84,7 @@ async def upload_document(file: UploadFile):
     )
 
 
-@router.get("/{task_id}/status", response_model=TaskStatusResponse)
+@router.get("/{task_id}", response_model=TaskStatusResponse)
 async def get_task_status(task_id: str):
     """查询文档处理进度"""
     task = _tasks.get(task_id)

@@ -1,9 +1,8 @@
 """R&D Agent — 研发领域专用的 RAG Agent"""
 
+from src.ai.agents.base_agent import invoke_llm
 from src.ai.rag.retrievers.context_builder import ContextBuilder
 from src.ai.rag.retrievers.retriever import Retriever
-from src.ai.rag.retrievers.rag_prompt import RAG_SYSTEM_PROMPT, RAG_USER_TEMPLATE
-from src.core.llm_client import get_chat_llm
 from src.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -25,14 +24,7 @@ class RDAgent:
             return {"answer": "根据现有文档未找到相关信息。", "retrievals": []}
 
         context = self.builder.build(hits)
-
-        llm = get_chat_llm()
-        from langchain_core.messages import SystemMessage, HumanMessage
-        response = llm.invoke([
-            SystemMessage(content=RAG_SYSTEM_PROMPT),
-            HumanMessage(content=RAG_USER_TEMPLATE.format(context=context, question=query)),
-        ])
-        answer = response.content if hasattr(response, "content") else str(response)
+        answer = invoke_llm(context, query)
 
         return {
             "answer": answer,

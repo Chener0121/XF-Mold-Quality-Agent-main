@@ -1,6 +1,5 @@
 """文档处理服务 — 串联完整流水线，支持缓存去重"""
 
-import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -12,20 +11,13 @@ from src.ai.rag.embeddings.pipeline import EmbeddingPipeline
 from src.ai.rag.vectorstores.chroma_store import ChromaStore
 from src.core.config import settings
 from src.core.logger import get_logger
+from src.utils.file import file_hash
 from src.document.parsers.docx_parser import DocxParser
 from src.document.processors.chunker import Chunker
 from src.document.processors.semantic_processor import SemanticProcessor
 from src.document.processors.vlm_processor import VLMProcessor
 
 logger = get_logger(__name__)
-
-
-def _file_hash(path: str | Path) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 class DocumentService:
@@ -57,7 +49,7 @@ class DocumentService:
                 on_progress(stage, {"filename": source, **kwargs})
 
         # 0. 文档级去重
-        file_hash = _file_hash(file_path)
+        file_hash = file_hash(file_path)
         existing = self.doc_cache.get(file_hash)
         if existing:
             logger.info("文档已存在，跳过处理: %s (doc_id=%s)", source, existing.doc_id)
@@ -95,7 +87,7 @@ class DocumentService:
             block_ids = [e.id for e in embedded]
 
         # 记录文档缓存
-        doc_id = hashlib.sha256((file_hash + source).encode()).hexdigest()[:16]
+        doc_id = f"{hash(file_hash + source) & 0xFFFFFFFF:08x}"
         self.doc_cache.save(DocumentRecord(
             doc_id=doc_id,
             file_hash=file_hash,

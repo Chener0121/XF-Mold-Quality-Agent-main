@@ -67,7 +67,7 @@ project-root/
 │   │   │
 │   │   ├── document/                      # 文档理解核心
 │   │   │   ├── parsers/                   # docx/pdf解析
-│   │   │   └──  processors/               # 后处理
+│   │   │   └── processors/                # 后处理
 │   │   │
 │   │   ├── storage/
 │   │   │   ├── postgres/

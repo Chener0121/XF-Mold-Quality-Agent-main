@@ -18,7 +18,7 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="模具质量管理智能Agent - 后端API",
+    description="XF模具智能体平台 - 后端API",
     version="0.1.0",
     lifespan=lifespan,
 )

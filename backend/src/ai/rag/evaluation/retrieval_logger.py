@@ -17,7 +17,7 @@ class RetrievalLogger:
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
     def log(self, trace: RetrievalTrace) -> None:
-        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S%S")
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         filename = f"{ts}_{hash(trace.query) % 10000:04d}.json"
         path = self.log_dir / filename
         path.write_text(trace.model_dump_json(indent=2, ensure_ascii=False), encoding="utf-8")
