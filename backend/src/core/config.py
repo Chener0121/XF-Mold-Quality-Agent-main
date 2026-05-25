@@ -37,11 +37,12 @@ class Settings(BaseSettings):
     MINIO_BUCKET: str = "mold-documents"
     MINIO_USE_SSL: bool = False
 
-    # LLM
+    # LLM（OpenAI 兼容格式）
     LLM_API_KEY: str = ""
-    LLM_API_BASE: str = "https://api.openai.com/v1"
-    LLM_MODEL: str = "gpt-4o"
-    LLM_EMBEDDING_MODEL: str = "text-embedding-3-small"
+    LLM_API_BASE: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    LLM_MODEL: str = ""
+    LLM_VLM_MODEL: str = ""
+    LLM_EMBEDDING_MODEL: str = ""
 
     # Chroma
     CHROMA_PERSIST_DIR: str = "./chroma_data"
