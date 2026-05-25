@@ -49,8 +49,8 @@ class DocumentService:
                 on_progress(stage, {"filename": source, **kwargs})
 
         # 0. 文档级去重
-        file_hash = file_hash(file_path)
-        existing = self.doc_cache.get(file_hash)
+        fhash = file_hash(file_path)
+        existing = self.doc_cache.get(fhash)
         if existing:
             logger.info("文档已存在，跳过处理: %s (doc_id=%s)", source, existing.doc_id)
             return {
@@ -87,10 +87,10 @@ class DocumentService:
             block_ids = [e.id for e in embedded]
 
         # 记录文档缓存
-        doc_id = f"{hash(file_hash + source) & 0xFFFFFFFF:08x}"
+        doc_id = f"{hash(fhash + source) & 0xFFFFFFFF:08x}"
         self.doc_cache.save(DocumentRecord(
             doc_id=doc_id,
-            file_hash=file_hash,
+            file_hash=fhash,
             filename=source,
             created_at=datetime.now(timezone.utc).isoformat(),
             collection_name="semantic_blocks",

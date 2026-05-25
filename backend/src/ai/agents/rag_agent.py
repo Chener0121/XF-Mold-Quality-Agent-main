@@ -26,7 +26,7 @@ _AGENT_CONFIG = {
 
 
 def _get_agent(domain: str | None) -> object:
-    key = domain or "general"
+    key = domain if domain in _AGENT_CONFIG else "general"
     if key not in _agents:
         cfg = _AGENT_CONFIG[key]
         _agents[key] = create_react_agent(

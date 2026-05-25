@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 
 class RetrievalLogger:
     def __init__(self, log_dir: str | Path | None = None):
-        self.log_dir = Path(log_dir) or Path("logs/rag")
+        self.log_dir = Path(log_dir) if log_dir else Path("logs/rag")
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
     def log(self, trace: RetrievalTrace) -> None:
