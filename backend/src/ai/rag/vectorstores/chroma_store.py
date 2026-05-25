@@ -40,10 +40,10 @@ class ChromaStore:
         metadatas = []
         for b in blocks:
             meta = {}
-            for key in ("source", "type", "index", "page", "image_ref", "keywords"):
+            for key in ("source", "type", "index", "page", "image_ref", "keywords",
+                         "domains", "primary_domain", "section_title"):
                 if key in b.metadata and b.metadata[key] is not None:
                     val = b.metadata[key]
-                    # Chroma metadata 值必须是 str/int/float/bool
                     if isinstance(val, list):
                         val = ", ".join(str(v) for v in val)
                     meta[key] = val

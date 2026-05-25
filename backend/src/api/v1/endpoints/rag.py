@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from src.ai.agents.quality_agent import QualityAgent
+from src.ai.agents.rd_agent import RDAgent
 from src.ai.rag.evaluation.retrieval_logger import RetrievalLogger
 from src.ai.rag.evaluation.retrieval_trace import RetrievalTrace
 from src.ai.rag.retrievers.context_builder import ContextBuilder
@@ -13,6 +15,8 @@ router = APIRouter()
 _retriever: Retriever | None = None
 _builder: ContextBuilder | None = None
 _trace_logger: RetrievalLogger | None = None
+_quality_agent: QualityAgent | None = None
+_rd_agent: RDAgent | None = None
 
 
 def _get_retriever() -> Retriever:
@@ -36,9 +40,26 @@ def _get_trace_logger() -> RetrievalLogger:
     return _trace_logger
 
 
+def _get_quality_agent() -> QualityAgent:
+    global _quality_agent
+    if _quality_agent is None:
+        _quality_agent = QualityAgent()
+    return _quality_agent
+
+
+def _get_rd_agent() -> RDAgent:
+    global _rd_agent
+    if _rd_agent is None:
+        _rd_agent = RDAgent()
+    return _rd_agent
+
+
+# ── 通用 RAG ──
+
 class RAGQueryRequest(BaseModel):
     query: str
     top_k: int = 5
+    domain: str | None = None  # quality / rd / None(全部)
 
 
 class RAGSourceItem(BaseModel):
@@ -50,6 +71,7 @@ class RAGSourceItem(BaseModel):
     heading_path: list[str] = []
     block_type: str = ""
     page: int | None = None
+    primary_domain: str = ""
 
 
 class RAGQueryResponse(BaseModel):
@@ -61,10 +83,9 @@ class RAGQueryResponse(BaseModel):
 
 @router.post("/query", response_model=RAGQueryResponse)
 async def rag_query(request: RAGQueryRequest):
-    """RAG 问答：检索知识库 + LLM 生成回答，完整可观测"""
-    # 1. 检索
+    """RAG 问答：检索知识库 + LLM 生成回答"""
     retriever = _get_retriever()
-    hits = retriever.retrieve(request.query, top_k=request.top_k)
+    hits = retriever.retrieve(request.query, top_k=request.top_k, domain=request.domain)
 
     if not hits:
         _get_trace_logger().log(RetrievalTrace(
@@ -76,11 +97,8 @@ async def rag_query(request: RAGQueryRequest):
             retrievals=[], context_preview="", context_length=0,
         )
 
-    # 2. 构建上下文
-    builder = _get_builder()
-    context = builder.build(hits)
+    context = _get_builder().build(hits)
 
-    # 3. LLM 生成回答
     llm = get_chat_llm()
     from langchain_core.messages import SystemMessage, HumanMessage
     response = llm.invoke([
@@ -89,35 +107,56 @@ async def rag_query(request: RAGQueryRequest):
     ])
     answer = response.content if hasattr(response, "content") else str(response)
 
-    # 4. 组装结果
     retrievals = [
         RAGSourceItem(
             block_id=h.block_id,
             content=h.content[:300],
-            score=round(h.score, 4),
+            score=h.score,
             source=h.metadata.get("source", ""),
             section_title=h.metadata.get("section_title", ""),
             heading_path=str(h.metadata.get("heading_path", "")).split(" > ") if h.metadata.get("heading_path") else [],
             block_type=h.metadata.get("type", ""),
             page=h.metadata.get("page"),
+            primary_domain=h.metadata.get("primary_domain", ""),
         )
         for h in hits
     ]
 
-    # 5. 记录 trace
     trace = RetrievalTrace(
-        query=request.query,
-        top_k=request.top_k,
+        query=request.query, top_k=request.top_k,
         retrievals=[r.model_dump() for r in retrievals],
-        final_context=context,
-        context_length=len(context),
-        answer=answer,
+        final_context=context, context_length=len(context), answer=answer,
     )
     _get_trace_logger().log(trace)
 
     return RAGQueryResponse(
-        answer=answer,
-        retrievals=retrievals,
-        context_preview=context[:500],
-        context_length=len(context),
+        answer=answer, retrievals=retrievals,
+        context_preview=context[:500], context_length=len(context),
     )
+
+
+# ── Agent 专用接口 ──
+
+class AgentQueryRequest(BaseModel):
+    query: str
+
+
+class AgentQueryResponse(BaseModel):
+    answer: str
+    retrievals: list[dict]
+
+
+@router.post("/quality", response_model=AgentQueryResponse)
+async def quality_agent_query(request: AgentQueryRequest):
+    """Quality Agent：质量管理领域专用问答"""
+    agent = _get_quality_agent()
+    result = agent.ask(request.query)
+    return AgentQueryResponse(**result)
+
+
+@router.post("/rd", response_model=AgentQueryResponse)
+async def rd_agent_query(request: AgentQueryRequest):
+    """R&D Agent：研发领域专用问答"""
+    agent = _get_rd_agent()
+    result = agent.ask(request.query)
+    return AgentQueryResponse(**result)

@@ -1,7 +1,8 @@
-"""语义处理器 — 将 RawDocumentElement 转换为 SemanticBlock，支持标题层级传播"""
+"""语义处理器 — 将 RawDocumentElement 转换为 SemanticBlock，支持标题层级传播和领域分类"""
 
 import re
 
+from src.ai.rag.retrievers.domain_classifier import classify_domain
 from src.core.logger import get_logger
 from src.document.parsers.docx_parser import ElementType, RawDocumentElement
 from src.document.processors.semantic_block import SemanticBlock
@@ -84,6 +85,16 @@ class SemanticProcessor:
                     self._process_image(elem, source, heading_stack, blocks)
 
         merged = self._merge_short_blocks(blocks)
+        # 领域分类
+        for block in merged:
+            domain_info = classify_domain(
+                heading_path=block.metadata.get("heading_path", []),
+                content=block.content,
+                source=block.source,
+            )
+            block.metadata["domains"] = domain_info["domains"]
+            block.metadata["primary_domain"] = domain_info["primary_domain"]
+
         logger.info("语义转换完成: %d 个元素 → %d 个语义块 (合并前 %d)", len(elements), len(merged), len(blocks))
         return merged
 
