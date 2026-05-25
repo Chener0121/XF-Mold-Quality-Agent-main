@@ -6,7 +6,8 @@
       "Bash(uv sync *)",
       "Bash(uv run *)",
       "Bash(docker compose logs *)",
-      "Bash(docker compose exec *)"
+      "Bash(docker compose exec *)",
+      "Bash(python -c \"import langgraph; print\\(langgraph.__version__\\)\")"
     ]
   }
 }

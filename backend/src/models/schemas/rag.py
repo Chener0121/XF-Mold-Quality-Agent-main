@@ -7,20 +7,13 @@ class RAGQueryRequest(BaseModel):
     domain: str | None = None  # quality / rd / None(全部)
 
 
-class RAGSourceItem(BaseModel):
-    block_id: str
-    content: str
-    score: float
-    source: str = ""
-    section_title: str = ""
-    heading_path: list[str] = []
-    block_type: str = ""
-    page: int | None = None
-    primary_domain: str = ""
+class ToolCallItem(BaseModel):
+    tool_name: str = ""
+    content_preview: str = ""
 
 
 class RAGQueryResponse(BaseModel):
     answer: str
-    retrievals: list[RAGSourceItem]
+    retrievals: list[ToolCallItem] = []
     context_preview: str = ""
     context_length: int = 0
