@@ -18,6 +18,7 @@ _STOP_WORDS: set[str] = {
 
 # 从 style name 提取标题层级："Heading 1" → 0, "Heading 2" → 1, ...
 _HEADING_RE = re.compile(r"Heading\s+(\d+)")
+_PROCESS_NAME_RE = re.compile(r"^[A-Z]\d+\s")
 
 
 def _heading_level(style: str) -> int | None:
@@ -197,6 +198,15 @@ class SemanticProcessor:
 
         style = elem.metadata.get("style", "")
         level = _heading_level(style)
+
+        # 伪标题：过程标识符（C6、S2 等）作为子标题推入层级栈
+        # 同级过程名应互相替换，不层层嵌套
+        if level is None and _PROCESS_NAME_RE.match(text):
+            path = hs.get_path()
+            if path and _PROCESS_NAME_RE.match(path[-1]):
+                level = len(path) - 1  # 替换上一个同级过程名
+            else:
+                level = len(path)  # 首个过程名，作为当前最深层级的子标题
 
         if level is not None:
             # 标题段落 → 更新层级栈

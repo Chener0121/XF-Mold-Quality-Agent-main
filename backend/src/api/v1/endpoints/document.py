@@ -8,6 +8,8 @@ from fastapi import APIRouter, UploadFile
 
 from src.models.schemas.document import DocumentResponse, TaskStatusResponse
 from src.services.document_service import DocumentService
+from src.document.parsers.docx_parser import DocxParser
+from src.document.processors.semantic_processor import SemanticProcessor
 
 router = APIRouter()
 
@@ -97,3 +99,39 @@ async def get_task_status(task_id: str):
             status="not_found",
         )
     return task
+
+
+@router.post("/debug/blocks")
+async def debug_blocks(file: UploadFile):
+    """调试接口：解析文档到 semantic blocks，不走 VLM/embedding，用于验证 heading_path"""
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix != ".docx":
+        return {"error": "仅支持 .docx"}
+
+    tmp_dir = tempfile.mkdtemp(prefix="debug_blocks_")
+    tmp_path = Path(tmp_dir) / (file.filename or "upload.docx")
+    tmp_path.write_bytes(await file.read())
+
+    try:
+        parser = DocxParser()
+        processor = SemanticProcessor()
+
+        elements = await asyncio.to_thread(parser.parse, str(tmp_path))
+        blocks = await asyncio.to_thread(processor.process, elements, source=file.filename)
+
+        return {
+            "total_elements": len(elements),
+            "total_blocks": len(blocks),
+            "blocks": [
+                {
+                    "type": b.type,
+                    "heading_path": b.metadata.get("heading_path", []),
+                    "section_title": b.metadata.get("section_title", ""),
+                    "is_heading": b.metadata.get("is_heading", False),
+                    "content": b.content[:200],
+                }
+                for b in blocks
+            ],
+        }
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)

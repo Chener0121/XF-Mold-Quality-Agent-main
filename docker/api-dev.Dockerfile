@@ -5,9 +5,6 @@ WORKDIR /app
 # 安装 uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# 使用清华镜像加速
-ENV UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
-
 # 只复制依赖文件，安装依赖（源码通过 volume 挂载）
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
