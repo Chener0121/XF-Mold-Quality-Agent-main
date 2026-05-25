@@ -7,6 +7,7 @@ from src.ai.rag.embeddings.pipeline import EmbeddingPipeline
 from src.ai.rag.vectorstores.chroma_store import ChromaStore
 from src.core.logger import get_logger
 from src.document.parsers.docx_parser import DocxParser
+from src.document.processors.chunker import Chunker
 from src.document.processors.semantic_processor import SemanticProcessor
 from src.document.processors.vlm_processor import VLMProcessor
 
@@ -19,6 +20,7 @@ class DocumentService:
         self.parser = DocxParser()
         self.semantic_processor = SemanticProcessor()
         self.vlm_processor = VLMProcessor()
+        self.chunker = Chunker()
         self.embedding_pipeline = EmbeddingPipeline()
 
     def process_and_store(
@@ -53,12 +55,17 @@ class DocumentService:
         image_count = sum(1 for b in blocks if b.type == "image")
         progress("enriched", images_enriched=image_count)
 
-        # 4. Embedding
+        # 4. 语义切块
+        progress("chunking")
+        chunked = self.chunker.chunk(blocks)
+        progress("chunked", total_chunks=len(chunked))
+
+        # 5. Embedding
         progress("embedding")
-        embedded = self.embedding_pipeline.run(blocks)
+        embedded = self.embedding_pipeline.run(chunked)
         progress("embedded", total_embedded=len(embedded))
 
-        # 5. 存入 Chroma
+        # 6. 存入 Chroma
         if embedded:
             self.store.add_blocks(embedded)
 

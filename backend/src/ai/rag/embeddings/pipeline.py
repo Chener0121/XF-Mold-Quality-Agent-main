@@ -1,78 +1,53 @@
-"""Embedding Pipeline — SemanticBlock → EmbeddedBlock
-
-与 FastAPI / parser / VLM 解耦，纯 Python pipeline。
-"""
+"""Embedding Pipeline — ChunkedBlock → EmbeddedBlock"""
 
 import uuid
 
-from src.core.logger import get_logger
 from src.ai.rag.embeddings.embedder import Embedder
 from src.ai.rag.embeddings.models import EmbeddedBlock
-from src.document.processors.semantic_block import SemanticBlock
+from src.core.logger import get_logger
+from src.document.processors.chunker import ChunkedBlock
 
 logger = get_logger(__name__)
 
 
-def _build_embedding_text(block: SemanticBlock) -> str:
-    """拼接 embedding 输入文本: summary + content + keywords"""
-    parts: list[str] = []
-
-    if block.summary:
-        parts.append(block.summary)
-    if block.content:
-        parts.append(block.content)
-    if block.keywords:
-        parts.append(" ".join(block.keywords))
-
-    return "\n".join(parts)
-
-
 class EmbeddingPipeline:
-    """SemanticBlock → EmbeddedBlock"""
+    """ChunkedBlock → EmbeddedBlock"""
 
     def __init__(self, embedder: Embedder | None = None):
         self.embedder = embedder or Embedder()
 
-    def run(self, blocks: list[SemanticBlock]) -> list[EmbeddedBlock]:
+    def run(self, blocks: list[ChunkedBlock]) -> list[EmbeddedBlock]:
         if not blocks:
             return []
 
-        # 跳过 content 为空的块（未经 VLM 处理的 image）
-        valid: list[tuple[int, SemanticBlock, str]] = []
-        for block in blocks:
-            text = _build_embedding_text(block)
-            if not text.strip():
-                logger.warning("跳过空内容块: index=%d, type=%s", block.index, block.type)
-                continue
-            valid.append((len(valid), block, text))
+        # 过滤空内容
+        valid: list[tuple[int, ChunkedBlock]] = []
+        for i, block in enumerate(blocks):
+            if block.content.strip():
+                valid.append((i, block))
+            else:
+                logger.warning("跳过空内容块: parent=%s", block.parent_id)
 
         if not valid:
             logger.warning("无可嵌入的内容块")
             return []
 
         # 批量 embedding
-        texts = [t for _, _, t in valid]
+        texts = [block.content for _, block in valid]
         vectors = self.embedder.embed(texts)
 
         # 组装结果
         results: list[EmbeddedBlock] = []
-        for (i, block, text), embedding in zip(valid, vectors):
-            meta = {
-                "source": block.source,
-                "type": block.type,
-                "index": block.index,
-                "page": block.page,
-                "keywords": block.keywords,
-            }
-            if block.metadata.get("image_ref"):
-                meta["image_ref"] = block.metadata["image_ref"]
-
+        for (_, block), embedding in zip(valid, vectors):
             results.append(
                 EmbeddedBlock(
                     id=str(uuid.uuid4()),
-                    content=text,
+                    content=block.content,
                     embedding=embedding,
-                    metadata=meta,
+                    metadata={
+                        "parent_id": block.parent_id,
+                        **block.metadata,
+                    },
                 )
             )
 
