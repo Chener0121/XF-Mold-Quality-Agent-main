@@ -41,18 +41,24 @@ services:
     volumes:
       - ./volumes/minio:/data
 
-  api:
+  api-dev:
     build:
       context: .
-      dockerfile: docker/api.Dockerfile
-    container_name: mold-api
+      dockerfile: docker/api-dev.Dockerfile
+    container_name: mold-api-dev
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+      - MINIO_ENDPOINT=minio:9000
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
+      - ./backend/src:/app/backend/src
+      - ./pyproject.toml:/app/pyproject.toml
+      - chroma-data:/app/chroma_data
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,18 +67,17 @@ services:
       minio:
         condition: service_started
 
-  web:
-    build:
-      context: .
-      dockerfile: docker/web.Dockerfile
-    container_name: mold-web
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    depends_on:
-      - api
+  # web-dev:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/web-dev.Dockerfile
+  #   container_name: mold-web-dev
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./frontend/src:/app/src
+  #   depends_on:
+  #     - api-dev
 
 volumes:
-  postgres-data:
-  minio-data:
-  redis-data:
+  chroma-data:
