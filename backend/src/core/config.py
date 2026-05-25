@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     # Chroma
     CHROMA_PERSIST_DIR: str = "./chroma_data"
 
+    # Cache
+    CACHE_DIR: str = "./cache"
+
     @property
     def postgres_url(self) -> str:
         return (

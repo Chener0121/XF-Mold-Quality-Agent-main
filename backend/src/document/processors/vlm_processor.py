@@ -1,13 +1,15 @@
 """VLM 语义增强 — 将 image 类型的 SemanticBlock 通过 VLM 转换为可检索语义文本
 
-与 parser / FastAPI / pgvector 完全解耦，纯 Python pipeline。
+支持 VLMCache 避免重复调用。
 """
 
 import json
 
+from src.ai.rag.cache.hash_utils import compute_block_hash
+from src.ai.rag.cache.vlm_cache import VLMCache
 from src.core.logger import get_logger
-from src.document.processors.semantic_block import SemanticBlock
 from src.core.vlm_client import VLMClient
+from src.document.processors.semantic_block import SemanticBlock
 
 logger = get_logger(__name__)
 
@@ -62,11 +64,9 @@ content 字段必须详尽，将作为后续 embedding 和检索的语料。"""
 
 def _parse_vlm_response(raw: str) -> dict:
     """解析 VLM 返回的 JSON"""
-    # 尝试提取 JSON 块（VLM 可能包裹在 ```json ... ``` 中）
     text = raw.strip()
     if text.startswith("```"):
         lines = text.split("\n")
-        # 去掉首尾的 ``` 行
         lines = [l for l in lines if not l.strip().startswith("```")]
         text = "\n".join(lines)
 
@@ -80,11 +80,11 @@ def _parse_vlm_response(raw: str) -> dict:
 class VLMProcessor:
     """对 image 类型的 SemanticBlock 进行 VLM 语义增强"""
 
-    def __init__(self, vlm_client: VLMClient | None = None):
+    def __init__(self, vlm_client: VLMClient | None = None, vlm_cache: VLMCache | None = None):
         self.client = vlm_client or VLMClient()
+        self.cache = vlm_cache
 
     def enrich(self, block: SemanticBlock) -> SemanticBlock:
-        """增强单个 image 语义块"""
         if block.type != "image":
             return block
 
@@ -93,10 +93,22 @@ class VLMProcessor:
             logger.warning("语义块缺少 image_ref，跳过 VLM: index=%d", block.index)
             return block
 
-        raw = self.client.analyze(image_ref, VLM_PROMPT)
-        parsed = _parse_vlm_response(raw)
+        # 查缓存
+        block_hash = compute_block_hash(block.type, block.content, block.metadata)
+        if self.cache:
+            cached = self.cache.get(block_hash, self.client.model)
+            if cached:
+                logger.info("VLM 缓存命中: %s", block_hash[:12])
+                parsed = cached
+                raw = None
+            else:
+                raw = self.client.analyze(image_ref, VLM_PROMPT)
+                parsed = _parse_vlm_response(raw)
+                self.cache.save(block_hash, self.client.model, parsed)
+        else:
+            raw = self.client.analyze(image_ref, VLM_PROMPT)
+            parsed = _parse_vlm_response(raw)
 
-        # 构建新的 metadata（保留原始信息）
         new_metadata = {**block.metadata}
         if "image_type" in parsed:
             new_metadata["image_type"] = parsed["image_type"]
@@ -115,7 +127,6 @@ class VLMProcessor:
         )
 
     def enrich_all(self, blocks: list[SemanticBlock]) -> list[SemanticBlock]:
-        """批量增强所有 image 类型的语义块"""
         image_count = sum(1 for b in blocks if b.type == "image")
         logger.info("VLM 语义增强: %d 张图片待处理", image_count)
 

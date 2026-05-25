@@ -59,6 +59,7 @@ services:
       - ./backend/src:/app/backend/src
       - ./pyproject.toml:/app/pyproject.toml
       - chroma-data:/app/chroma_data
+      - cache-data:/app/cache
     depends_on:
       postgres:
         condition: service_healthy
@@ -81,3 +82,4 @@ services:
 
 volumes:
   chroma-data:
+  cache-data:
