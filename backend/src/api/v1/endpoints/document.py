@@ -72,7 +72,6 @@ async def upload_document(file: UploadFile):
             _tasks[task_id].stage = _tasks[task_id].stage
             _tasks[task_id].progress = {"error": str(e)}
         finally:
-            # 清理临时文件
             import shutil
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
