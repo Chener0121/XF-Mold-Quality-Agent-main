@@ -67,11 +67,7 @@ project-root/
 │   │   │
 │   │   ├── document/                      # 文档理解核心
 │   │   │   ├── parsers/                   # docx/pdf解析
-│   │   │   ├── extractors/                # 图片/表格抽取
-│   │   │   ├── vlm/                       # VLM图像理解
-│   │   │   ├── chunkers/                  # 语义切块
-│   │   │   ├── processors/                # 后处理
-│   │   │   └── pipelines/                 # 文档处理流水线
+│   │   │   └──  processors/               # 后处理
 │   │   │
 │   │   ├── storage/
 │   │   │   ├── postgres/
