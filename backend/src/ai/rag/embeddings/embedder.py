@@ -22,16 +22,24 @@ class Embedder:
         self.model = model or settings.LLM_EMBEDDING_MODEL
         self._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
 
+    BATCH_SIZE = 25
+
     def embed(self, texts: list[str]) -> list[list[float]]:
-        """批量文本向量化"""
+        """批量文本向量化，自动分批"""
         if not texts:
             return []
 
-        logger.info("Embedding: %d 条文本 (model=%s)", len(texts), self.model)
-        response = self._client.embeddings.create(
-            model=self.model,
-            input=texts,
-        )
-        # 按 index 排序确保顺序一致
-        data = sorted(response.data, key=lambda x: x.index)
-        return [item.embedding for item in data]
+        logger.info("Embedding: %d 条文本 (model=%s, batch=%d)", len(texts), self.model, self.BATCH_SIZE)
+
+        all_embeddings: list[list[float]] = []
+        for i in range(0, len(texts), self.BATCH_SIZE):
+            batch = texts[i : i + self.BATCH_SIZE]
+            logger.info("Embedding 批次 %d/%d (%d 条)", i // self.BATCH_SIZE + 1, -(-len(texts) // self.BATCH_SIZE), len(batch))
+            response = self._client.embeddings.create(
+                model=self.model,
+                input=batch,
+            )
+            data = sorted(response.data, key=lambda x: x.index)
+            all_embeddings.extend(item.embedding for item in data)
+
+        return all_embeddings

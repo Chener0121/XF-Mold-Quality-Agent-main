@@ -1,8 +1,7 @@
 """文档处理服务 — 串联完整流水线：parser → processor → VLM → embedding → Chroma"""
 
-import shutil
-import tempfile
 from pathlib import Path
+from typing import Any, Callable
 
 from src.ai.rag.embeddings.pipeline import EmbeddingPipeline
 from src.ai.rag.vectorstores.chroma_store import ChromaStore
@@ -22,32 +21,48 @@ class DocumentService:
         self.vlm_processor = VLMProcessor()
         self.embedding_pipeline = EmbeddingPipeline()
 
-    def process_and_store(self, file_path: str | Path, filename: str = "") -> dict:
-        """完整处理流水线：解析 → 语义转换 → VLM增强 → embedding → 存储"""
+    def process_and_store(
+        self,
+        file_path: str | Path,
+        filename: str = "",
+        on_progress: Callable[[str, dict[str, Any]], None] | None = None,
+    ) -> dict:
+        """完整处理流水线，支持进度回调"""
         file_path = Path(file_path)
         source = filename or file_path.name
         logger.info("开始处理文档: %s", source)
 
+        def progress(stage: str, **kwargs):
+            logger.info("[%s] %s", stage, kwargs)
+            if on_progress:
+                on_progress(stage, {"filename": source, **kwargs})
+
         # 1. 解析
+        progress("parsing")
         raw_elements = self.parser.parse(file_path)
-        logger.info("解析完成: %d 个原始元素", len(raw_elements))
+        progress("parsed", total_elements=len(raw_elements))
 
         # 2. 语义转换
+        progress("processing")
         blocks = self.semantic_processor.process(raw_elements, source=source)
-        logger.info("语义转换完成: %d 个语义块", len(blocks))
+        progress("processed", total_blocks=len(blocks))
 
         # 3. VLM 增强
+        progress("enriching")
         blocks = self.vlm_processor.enrich_all(blocks)
-        logger.info("VLM 增强完成")
+        image_count = sum(1 for b in blocks if b.type == "image")
+        progress("enriched", images_enriched=image_count)
 
         # 4. Embedding
+        progress("embedding")
         embedded = self.embedding_pipeline.run(blocks)
-        logger.info("Embedding 完成: %d 个向量", len(embedded))
+        progress("embedded", total_embedded=len(embedded))
 
         # 5. 存入 Chroma
         if embedded:
             self.store.add_blocks(embedded)
 
+        progress("completed", total_embedded=len(embedded))
         return {
             "filename": source,
             "total_elements": len(raw_elements),
