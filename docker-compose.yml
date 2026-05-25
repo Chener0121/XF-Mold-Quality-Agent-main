@@ -60,6 +60,7 @@ services:
       - ./pyproject.toml:/app/pyproject.toml
       - chroma-data:/app/chroma_data
       - cache-data:/app/cache
+      - rag-logs:/app/logs/rag
     depends_on:
       postgres:
         condition: service_healthy
@@ -83,3 +84,4 @@ services:
 volumes:
   chroma-data:
   cache-data:
+  rag-logs:
