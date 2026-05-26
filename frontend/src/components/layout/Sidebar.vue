@@ -135,8 +135,24 @@ interface TaskInfo {
   status: string
 }
 
+const TASKS_KEY = 'xf-upload-tasks'
 const tasks = ref<TaskInfo[]>([])
 const timers = new Map<string, number>()
+
+// 从 localStorage 恢复（只保留最近 20 条已完成的 + 所有进行中的）
+try {
+  const raw = localStorage.getItem(TASKS_KEY)
+  if (raw) {
+    const saved: TaskInfo[] = JSON.parse(raw)
+    const active = saved.filter(t => t.status === 'processing' || t.status === 'failed')
+    const done = saved.filter(t => t.status === 'completed').slice(0, 20)
+    tasks.value = [...active, ...done]
+  }
+} catch { /* ignore */ }
+
+function saveTasks() {
+  localStorage.setItem(TASKS_KEY, JSON.stringify(tasks.value))
+}
 
 function statusLabel(status: string): string {
   return { processing: '处理中', completed: '完成', failed: '失败' }[status] || status
@@ -151,6 +167,7 @@ function startPolling(taskId: string) {
       if (task) {
         task.stage = result.stage
         task.status = result.status
+        saveTasks()
       }
       if (result.status === 'completed' || result.status === 'failed') {
         clearInterval(timer)
@@ -181,6 +198,7 @@ async function handleUpload(options: any) {
       stage: 'queued',
       status: 'processing',
     })
+    saveTasks()
     ElMessage.success('上传成功，正在处理...')
     startPolling(result.id)
   } catch (e: any) {
