@@ -13,7 +13,7 @@
 
     <!-- 功能按钮 -->
     <div class="sidebar__actions">
-      <button class="sidebar__action" @click="chatStore.createConversation()" :title="open ? '' : '新建对话'">
+      <button class="sidebar__action" :class="{ active: !chatStore.activeId }" @click="chatStore.goHome()" :title="open ? '' : '新建对话'">
         <span class="sidebar__action-icon"><Plus :size="18" /></span>
         <span class="sidebar__action-label">New Chat</span>
       </button>
@@ -288,6 +288,11 @@ async function handleUpload(options: any) {
 
   &--active {
     background: var(--gray-100);
+  }
+
+  &.active {
+    background: var(--color-primary-50);
+    color: var(--color-primary-500);
   }
 }
 

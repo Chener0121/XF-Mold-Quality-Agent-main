@@ -68,6 +68,11 @@ export const useChatStore = defineStore('chat', () => {
     save()
   }
 
+  function goHome() {
+    activeId.value = ''
+    save()
+  }
+
   function addUserMessage(content: string) {
     const conv = activeConversation.value
     if (!conv) return
@@ -94,6 +99,7 @@ export const useChatStore = defineStore('chat', () => {
     createConversation,
     switchConversation,
     deleteConversation,
+    goHome,
     addUserMessage,
     addAssistantMessage,
   }

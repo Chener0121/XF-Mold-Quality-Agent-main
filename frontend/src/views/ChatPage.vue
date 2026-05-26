@@ -6,16 +6,20 @@
         <h2 class="chat-welcome__title">Ask Away</h2>
         <p class="chat-welcome__desc">基于 FMEA 和 VDA6.4 质量手册的智能问答</p>
 
-        <div class="suggestions">
-          <button
-            v-for="s in suggestions"
-            :key="s"
-            class="suggestion"
-            @click="sendSuggestion(s)"
-          >
-            {{ s }}
+        <div class="chat-input__inner chat-input__inner--welcome">
+          <textarea
+            ref="inputRef"
+            v-model="inputText"
+            placeholder="输入你的问题..."
+            rows="1"
+            @input="autoResize"
+            @keydown="handleKeydown"
+          ></textarea>
+          <button class="chat-input__send" :disabled="!inputText.trim() || chatStore.loading" @click="sendMessage">
+            <ArrowUp :size="18" />
           </button>
         </div>
+        <p class="chat-input__disclaimer">内容由 AI 生成，请仔细甄别</p>
       </div>
     </div>
 
@@ -28,16 +32,6 @@
             <div class="chat-empty__inner">
               <Bot :size="28" />
               <p>输入问题，开始对话</p>
-              <div class="suggestions suggestions--compact">
-                <button
-                  v-for="s in suggestions"
-                  :key="s"
-                  class="suggestion"
-                  @click="sendSuggestion(s)"
-                >
-                  {{ s }}
-                </button>
-              </div>
             </div>
           </div>
           <div
@@ -114,13 +108,6 @@ const inputRef = ref<HTMLTextAreaElement>()
 const messageListRef = ref<HTMLElement>()
 const showRetrievals = reactive<Record<number, boolean>>({})
 
-const suggestions = [
-  'C6生产过程的失效模式有哪些？',
-  'VDA6.4 过程乌龟图包含哪些要素？',
-  'FMEA 中如何定义严重度？',
-  'M7项目管理过程的目标是什么？',
-]
-
 function toggleRetrievals(idx: number) {
   showRetrievals[idx] = !showRetrievals[idx]
 }
@@ -184,16 +171,6 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
-function sendSuggestion(text: string) {
-  if (!chatStore.activeConversation) {
-    chatStore.createConversation()
-  }
-  nextTick(() => {
-    inputText.value = text
-    sendMessage()
-  })
-}
-
 async function sendMessage() {
   const text = inputText.value.trim()
   if (!text || chatStore.loading) return
@@ -250,52 +227,38 @@ watch(() => chatStore.activeId, () => {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  max-width: 600px;
+  max-width: 680px;
+  width: 100%;
   padding: 0 24px;
 }
 
 .chat-welcome__title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 600;
   color: var(--main-900);
   margin: 0 0 8px;
 }
 
 .chat-welcome__desc {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--gray-500);
-  margin: 0 0 32px;
+  margin: 0 0 40px;
 }
 
-/* 建议提示词 */
-.suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  margin-bottom: 24px;
+/* 欢迎页输入框 */
+.chat-input__inner--welcome {
   width: 100%;
-}
+  border-radius: 28px;
+  padding: 8px 8px 8px 20px;
 
-.suggestions--compact {
-  margin-bottom: 0;
-  margin-top: 16px;
-}
-
-.suggestion {
-  padding: 8px 16px;
-  border: 1px solid var(--gray-200);
-  border-radius: 20px;
-  background: var(--main-0);
-  font-size: 13px;
-  color: var(--gray-700);
-  cursor: pointer;
-  transition: all 0.15s;
-
-  &:hover {
-    background: var(--gray-50);
-    border-color: var(--gray-300);
+  textarea {
+    font-size: 16px;
+    padding: 12px 0;
   }
+}
+
+.chat-welcome .chat-input__disclaimer {
+  margin-top: 12px;
 }
 
 /* ===== 消息区域 ===== */
