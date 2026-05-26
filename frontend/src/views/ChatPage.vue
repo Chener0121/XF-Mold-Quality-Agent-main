@@ -272,7 +272,7 @@ watch(() => chatStore.activeId, () => {
     border: none;
     outline: none;
     resize: none;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.5;
     font-family: inherit;
     max-height: 200px;
@@ -294,7 +294,7 @@ watch(() => chatStore.activeId, () => {
   align-items: center;
 
   textarea {
-    font-size: 16px !important;
+    font-size: 16px;
     padding: 0;
   }
 
@@ -427,7 +427,7 @@ watch(() => chatStore.activeId, () => {
 }
 
 .msg__content {
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.7;
   color: var(--main-900);
   word-break: break-word;
