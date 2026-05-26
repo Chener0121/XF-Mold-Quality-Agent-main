@@ -247,13 +247,22 @@ watch(() => chatStore.activeId, () => {
 
 /* 欢迎页输入框 */
 .chat-input__inner--welcome {
-  width: 100%;
-  border-radius: 28px;
-  padding: 8px 8px 8px 20px;
+  width: 660px;
+  max-width: 100%;
+  height: 64px;
+  border-radius: 32px !important;
+  padding: 0 16px 0 24px !important;
+  align-items: center !important;
 
   textarea {
     font-size: 16px;
-    padding: 12px 0;
+    padding: 0;
+  }
+
+  .chat-input__send {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
   }
 }
 
