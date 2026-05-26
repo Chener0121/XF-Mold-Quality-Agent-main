@@ -23,9 +23,7 @@ env/
 .env
 
 # Docker volumes
-volumes/postgres/
-volumes/minio/
-volumes/redis/
+volumes/
 
 # OS
 .DS_Store

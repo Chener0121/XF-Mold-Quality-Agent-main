@@ -18,29 +18,6 @@ services:
     networks:
       - mold-network
 
-  redis:
-    image: redis:7-alpine
-    container_name: mold-redis
-    restart: always
-    command: redis-server --requirepass ${REDIS_PASSWORD:-}
-    volumes:
-      - redis-data:/data
-    networks:
-      - mold-network
-
-  minio:
-    image: minio/minio:latest
-    container_name: mold-minio
-    restart: always
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
-    volumes:
-      - minio-data:/data
-    networks:
-      - mold-network
-
   api:
     build:
       context: .
@@ -54,10 +31,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
-      minio:
-        condition: service_started
     networks:
       - mold-network
 
@@ -79,8 +52,6 @@ services:
 
 volumes:
   postgres-data:
-  minio-data:
-  redis-data:
 
 networks:
   mold-network:
