@@ -199,7 +199,7 @@ async function handleUpload(options: any) {
 /* 头部 */
 .sidebar__header {
   height: 52px;
-  padding: 0 12px;
+  padding: 0 8px 0 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -226,6 +226,11 @@ async function handleUpload(options: any) {
 }
 
 .sidebar__logo {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 18px;
   font-weight: 700;
   color: var(--color-primary-500);
