@@ -1,33 +1,13 @@
 <template>
   <div class="chat-page">
-    <!-- 欢迎页 -->
-    <div v-if="!chatStore.activeConversation" class="chat-welcome">
-      <div class="chat-welcome__inner">
-        <h2 class="chat-welcome__title">Ask Away</h2>
+    <!-- 标题：淡出 -->
+    <Transition name="welcome-fade">
+      <h2 v-if="!chatStore.activeConversation" class="chat-welcome__title">Ask Away</h2>
+    </Transition>
 
-        <div class="chat-input__inner chat-input__inner--welcome"
-             :class="{ 'chat-input__inner--multiline': lineCount > 1 }"
-             :style="{ height: welcomeInputHeight + 'px' }">
-          <textarea
-            ref="inputRef"
-            v-model="inputText"
-            placeholder="输入你的问题..."
-            rows="1"
-            @input="autoResize"
-            @keydown="handleKeydown"
-          ></textarea>
-          <button class="chat-input__send" :disabled="!inputText.trim() || chatStore.loading" @click="sendMessage">
-            <ArrowUp :size="18" />
-          </button>
-        </div>
-        <p class="chat-input__disclaimer">内容由 AI 生成，请仔细甄别</p>
-      </div>
-    </div>
-
-    <!-- 对话界面 -->
-    <template v-else>
-      <!-- 消息列表 -->
-      <div ref="messageListRef" class="chat-messages">
+    <!-- 消息列表 -->
+    <Transition name="messages-fade">
+      <div v-if="chatStore.activeConversation" ref="messageListRef" class="chat-messages">
         <div class="chat-messages__inner">
           <div v-if="chatStore.activeConversation.messages.length === 0" class="chat-empty">
             <div class="chat-empty__inner">
@@ -72,25 +52,28 @@
           </div>
         </div>
       </div>
+    </Transition>
 
-      <!-- 输入区域 -->
-      <div class="chat-input">
-        <div class="chat-input__inner">
-          <textarea
-            ref="inputRef"
-            v-model="inputText"
-            placeholder="输入你的问题..."
-            rows="1"
-            @input="autoResize"
-            @keydown="handleKeydown"
-          ></textarea>
-          <button class="chat-input__send" :disabled="!inputText.trim() || chatStore.loading" @click="sendMessage">
-            <ArrowUp :size="18" />
-          </button>
-        </div>
-        <p class="chat-input__disclaimer">内容由 AI 生成，请仔细甄别</p>
+    <!-- 唯一的输入框：始终渲染，通过 class 切换位置 -->
+    <div class="chat-input-container"
+         :class="{ 'chat-input-container--docked': !!chatStore.activeConversation }">
+      <div class="chat-input__inner chat-input__inner--welcome"
+           :class="{ 'chat-input__inner--multiline': lineCount > 1 }"
+           :style="{ height: welcomeInputHeight + 'px' }">
+        <textarea
+          ref="inputRef"
+          v-model="inputText"
+          placeholder="输入你的问题..."
+          rows="1"
+          @input="autoResize"
+          @keydown="handleKeydown"
+        ></textarea>
+        <button class="chat-input__send" :disabled="!inputText.trim() || chatStore.loading" @click="sendMessage">
+          <ArrowUp :size="18" />
+        </button>
       </div>
-    </template>
+      <p class="chat-input__disclaimer">内容由 AI 生成，请仔细甄别</p>
+    </div>
   </div>
 </template>
 
@@ -164,7 +147,6 @@ function autoResize() {
   const el = inputRef.value
   if (!el) return
 
-  // 临时移除 padding 和 height，测量纯内容高度
   el.style.height = '0'
   el.style.paddingTop = '0'
   el.style.paddingBottom = '0'
@@ -172,7 +154,6 @@ function autoResize() {
   const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 24
   const lines = Math.max(1, Math.round(el.scrollHeight / lineHeight))
 
-  // 恢复，让 CSS class 控制实际样式
   el.style.height = ''
   el.style.paddingTop = ''
   el.style.paddingBottom = ''
@@ -225,58 +206,92 @@ watch(() => chatStore.activeId, () => {
 
 <style scoped lang="less">
 .chat-page {
-  display: flex;
-  flex-direction: column;
+  position: relative;
   height: 100vh;
   background: var(--main-0);
+  overflow: hidden;
 }
 
-/* ===== 欢迎页 ===== */
-.chat-welcome {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.chat-welcome__inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  max-width: 680px;
-  width: 100%;
-  padding: 0 24px;
-}
-
+/* ===== 标题 ===== */
 .chat-welcome__title {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 32px;
   font-weight: 600;
   color: var(--main-900);
-  margin: 0 0 24px;
-  animation: fade-up 0.5s ease both;
+  margin: 0;
+  white-space: nowrap;
 }
 
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 欢迎页输入框 - 单行药丸 */
-.chat-input__inner--welcome {
+/* ===== 输入框容器：位置过渡 ===== */
+.chat-input-container {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
   width: 660px;
-  max-width: 100%;
+  max-width: calc(100% - 48px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: top 1.2s cubic-bezier(0.4, 0, 0.2, 1), 
+              width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.5s ease,
+              border-color 0.3s ease;
+
+  /* 欢迎模式：居中偏下 */
+  &:not(.chat-input-container--docked) {
+    top: 50%;
+  }
+
+  /* 聊天模式：底部，保持同样的宽度 */
+  &.chat-input-container--docked {
+    top: calc(100% - 100px);
+  }
+}
+
+/* ===== 输入框内框 ===== */
+.chat-input__inner {
+  width: 100%;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  border: 1px solid var(--gray-300);
+  border-radius: 24px;
+  padding: 4px 4px 4px 16px;
+  transition: border-color 0.2s, height 0.2s ease, border-radius 0.2s ease, padding 0.2s ease;
+
+  &:focus-within {
+    border-color: var(--color-primary-500);
+  }
+
+  textarea {
+    flex: 1;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 14px;
+    line-height: 1.5;
+    font-family: inherit;
+    max-height: 200px;
+    padding: 8px 0;
+    color: var(--main-900);
+    background: transparent;
+
+    &::placeholder {
+      color: var(--gray-400);
+    }
+  }
+}
+
+/* 欢迎模式 - 单行药丸 */
+.chat-input__inner--welcome {
   height: 64px;
-  border-radius: 32px !important;
-  padding: 0 16px 0 24px !important;
-  align-items: center !important;
-  transition: height 0.2s ease, border-radius 0.2s ease, padding 0.2s ease;
+  border-radius: 32px;
+  padding: 0 16px 0 24px;
+  align-items: center;
 
   textarea {
     font-size: 16px !important;
@@ -292,10 +307,10 @@ watch(() => chatStore.activeId, () => {
   }
 }
 
-/* 欢迎页输入框 - 多行展开 */
+/* 欢迎模式 - 多行展开 */
 .chat-input__inner--welcome.chat-input__inner--multiline {
-  border-radius: 20px !important;
-  padding: 0 !important;
+  border-radius: 20px;
+  padding: 0;
 
   textarea {
     width: 100%;
@@ -313,13 +328,44 @@ watch(() => chatStore.activeId, () => {
   }
 }
 
-.chat-welcome .chat-input__disclaimer {
-  margin-top: 12px;
+.chat-input__send {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-primary-500);
+  color: var(--main-0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-700);
+  }
+
+  &:disabled {
+    background: var(--gray-300);
+    cursor: not-allowed;
+  }
+}
+
+.chat-input__disclaimer {
+  text-align: center;
+  font-size: 11px;
+  color: var(--gray-400);
+  margin: 6px 0 0;
 }
 
 /* ===== 消息区域 ===== */
 .chat-messages {
-  flex: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 70px;
   overflow-y: auto;
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
@@ -490,75 +536,30 @@ watch(() => chatStore.activeId, () => {
   40% { transform: scale(1); opacity: 1; }
 }
 
-/* ===== 输入区域 ===== */
-.chat-input {
-  border-top: 1px solid var(--gray-200);
-  padding: 12px 24px 12px;
-  background: var(--main-0);
+/* ===== Vue Transition 动画 ===== */
+.welcome-fade-enter-active {
+  transition: opacity 1.2s ease, transform 1.2s ease;
+}
+.welcome-fade-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
+.welcome-fade-leave-active {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.welcome-fade-leave-from {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.welcome-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
 }
 
-.chat-input__inner {
-  max-width: 760px;
-  margin: 0 auto;
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  border: 1px solid var(--gray-300);
-  border-radius: 24px;
-  padding: 4px 4px 4px 16px;
-  transition: border-color 0.2s;
-
-  &:focus-within {
-    border-color: var(--color-primary-500);
-  }
-
-  textarea {
-    flex: 1;
-    border: none;
-    outline: none;
-    resize: none;
-    font-size: 14px;
-    line-height: 1.5;
-    font-family: inherit;
-    max-height: 200px;
-    padding: 8px 0;
-    color: var(--main-900);
-    background: transparent;
-
-    &::placeholder {
-      color: var(--gray-400);
-    }
-  }
+.messages-fade-enter-active {
+  transition: opacity 0.5s ease 0.3s;
 }
-
-.chat-input__send {
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  background: var(--color-primary-500);
-  color: var(--main-0);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.2s;
-
-  &:hover:not(:disabled) {
-    background: var(--color-primary-700);
-  }
-
-  &:disabled {
-    background: var(--gray-300);
-    cursor: not-allowed;
-  }
-}
-
-.chat-input__disclaimer {
-  text-align: center;
-  font-size: 11px;
-  color: var(--gray-400);
-  margin: 6px 0 0;
+.messages-fade-enter-from {
+  opacity: 0;
 }
 </style>
