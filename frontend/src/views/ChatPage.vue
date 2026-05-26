@@ -459,6 +459,16 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
+
+  &::after {
+    content: '';
+    position: sticky;
+    bottom: -2px;
+    display: block;
+    height: 40px;
+    background: linear-gradient(to top, var(--main-0), transparent);
+    pointer-events: none;
+  }
 }
 
 .chat-messages__inner {
