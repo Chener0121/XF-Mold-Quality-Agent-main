@@ -102,27 +102,27 @@
 
 `POST /api/v1/rag/query`
 
-基于 LangGraph ReAct Agent 自动检索知识库并生成回答。
+基于 LangGraph ReAct Agent 自动检索知识库并生成回答。支持多轮对话上下文，自动领域路由。
 
 **请求体:**
 ```json
 {
   "query": "C6生产过程的失效模式有哪些？",
-  "top_k": 5,
-  "domain": null
+  "conversation_id": null
 }
 ```
 
 | 字段 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `query` | string | 必填 | 用户问题 |
-| `top_k` | int | `5` | 检索返回的文档片段数量 |
-| `domain` | string \| null | `null` | 领域过滤: `quality` / `rd` / `null`(全部) |
+| `conversation_id` | string \| null | `null` | 已有会话 ID，为空则创建新会话 |
 
 **响应** (`200 OK`):
 ```json
 {
   "answer": "根据FMEA手册，C6生产过程的主要失效模式包括...",
+  "conversation_id": "uuid",
+  "domain": "quality",
   "retrievals": [
     {
       "tool_name": "knowledge_search",
@@ -130,6 +130,73 @@
     }
   ],
   "context_preview": "片段1内容...\n---\n片段2内容...",
-  "context_length": 2340
+  "context_length": 2340,
+  "rewritten_query": null
 }
+```
+
+---
+
+### 会话管理
+
+#### 会话列表
+
+`GET /api/v1/conversations`
+
+**查询参数:**
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `offset` | int | `0` | 偏移量 |
+| `limit` | int | `50` | 每页数量 |
+
+**响应** (`200 OK`):
+```json
+{
+  "items": [
+    { "id": "uuid", "title": "FMEA相关问题", "created_at": "2026-05-26T12:00:00Z" }
+  ],
+  "total": 1
+}
+```
+
+#### 会话详情
+
+`GET /api/v1/conversations/{conversation_id}`
+
+**响应** (`200 OK`):
+```json
+{
+  "id": "uuid",
+  "title": "FMEA相关问题",
+  "messages": [
+    {
+      "id": "msg-uuid",
+      "role": "user",
+      "content": "DFMEA七步法是什么？",
+      "retrievals": [],
+      "created_at": "2026-05-26T12:00:00Z"
+    },
+    {
+      "id": "msg-uuid-2",
+      "role": "assistant",
+      "content": "DFMEA七步法包括...",
+      "retrievals": [
+        { "tool_name": "knowledge_search", "content_preview": "..." }
+      ],
+      "created_at": "2026-05-26T12:00:01Z"
+    }
+  ],
+  "created_at": "2026-05-26T12:00:00Z"
+}
+```
+
+#### 删除会话
+
+`DELETE /api/v1/conversations/{conversation_id}`
+
+**响应** (`204 No Content`)
+
+**未找到** (`404 Not Found`):
+```json
+{ "detail": "会话不存在" }
 ```

@@ -185,7 +185,14 @@ async function sendMessage() {
 
   chatStore.loading = true
   try {
-    const result = await askQuestion(text)
+    const convId = chatStore.activeId || undefined
+    const result = await askQuestion(text, convId)
+
+    // 新会话：用后端返回的 ID 回填
+    if (!chatStore.activeId) {
+      chatStore.confirmConversationId(result.conversation_id)
+    }
+
     chatStore.addAssistantMessage(result.answer, result.retrievals)
   } catch (e: any) {
     chatStore.addAssistantMessage('抱歉，出了点问题，请稍后重试。')

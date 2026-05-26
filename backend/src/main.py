@@ -13,6 +13,15 @@ from src.core.middleware import logging_middleware
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     setup_logging()
+
+    from src.models.entities.document import Base
+    from src.core.dependencies import engine
+    import src.models.entities.conversation  # noqa: F401
+    import src.models.entities.chunk  # noqa: F401
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     yield
 
 

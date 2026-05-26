@@ -1,6 +1,6 @@
 """RAG Agent — 基于 LangGraph create_react_agent 的多领域智能体"""
 
-from langchain_core.messages import HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.prebuilt import create_react_agent
 
 from src.ai.prompts.rag_prompt import (
@@ -14,7 +14,7 @@ from src.core.logger import get_logger
 
 logger = get_logger(__name__)
 
-MAX_RECURSION = 10  # 安全上限：3 次搜索 × 2 步 + 最终回答 ≈ 7 步
+MAX_RECURSION = 7  # 3 次搜索 × 2 步 + 最终回答
 
 _agents: dict[str, object] = {}
 
@@ -37,11 +37,22 @@ def _get_agent(domain: str | None) -> object:
     return _agents[key]
 
 
-def ask(query: str, domain: str | None = None) -> dict:
+def ask(query: str, domain: str | None = None, history: list[dict] | None = None) -> dict:
     """调用对应领域的 RAG Agent 并返回结果"""
     agent = _get_agent(domain)
+
+    # 构建消息列表：历史 + 当前 query
+    messages = []
+    if history:
+        for h in history:
+            if h["role"] == "user":
+                messages.append(HumanMessage(content=h["content"]))
+            else:
+                messages.append(AIMessage(content=h["content"]))
+    messages.append(HumanMessage(content=query))
+
     result = agent.invoke(
-        {"messages": [HumanMessage(content=query)]},
+        {"messages": messages},
         config={"recursion_limit": MAX_RECURSION},
     )
 

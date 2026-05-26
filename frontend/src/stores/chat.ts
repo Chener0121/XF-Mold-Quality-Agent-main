@@ -25,7 +25,7 @@ export const useChatStore = defineStore('chat', () => {
     conversations.value.find(c => c.id === activeId.value),
   )
 
-  // 立即从 localStorage 加载，避免首次渲染闪烁
+  // 从 localStorage 加载
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
@@ -42,16 +42,30 @@ export const useChatStore = defineStore('chat', () => {
     }))
   }
 
-  function createConversation() {
+  function createConversation(): Conversation {
     const conv: Conversation = {
-      id: Date.now().toString(),
+      id: '',  // placeholder，等后端返回真实 ID 后回填
       title: '新对话',
       messages: [],
       createdAt: new Date().toISOString(),
     }
     conversations.value.unshift(conv)
-    activeId.value = conv.id
+    activeId.value = ''  // 通过 placeholder 标识
+    _pendingConv = conv
     save()
+    return conv
+  }
+
+  // 跟踪待回填的 conversation
+  let _pendingConv: Conversation | null = null
+
+  function confirmConversationId(serverId: string) {
+    if (_pendingConv) {
+      _pendingConv.id = serverId
+      activeId.value = serverId
+      _pendingConv = null
+      save()
+    }
   }
 
   function switchConversation(id: string) {
@@ -59,12 +73,18 @@ export const useChatStore = defineStore('chat', () => {
     save()
   }
 
-  function deleteConversation(id: string) {
+  async function deleteConversation(id: string) {
     conversations.value = conversations.value.filter(c => c.id !== id)
     if (activeId.value === id) {
       activeId.value = conversations.value[0]?.id || ''
     }
     save()
+
+    // 同步后端
+    try {
+      const { deleteConversation: apiDelete } = await import('@/apis/conversation')
+      await apiDelete(id)
+    } catch { /* 忽略后端错误，本地已删除 */ }
   }
 
   function goHome() {
@@ -73,7 +93,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function addUserMessage(content: string) {
-    const conv = activeConversation.value
+    const conv = activeConversation.value || _pendingConv
     if (!conv) return
     conv.messages.push({ role: 'user', content })
     if (conv.title === '新对话') {
@@ -83,7 +103,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function addAssistantMessage(content: string, retrievals?: { tool_name: string; content_preview: string }[]) {
-    const conv = activeConversation.value
+    const conv = activeConversation.value || _pendingConv
     if (!conv) return
     conv.messages.push({ role: 'assistant', content, retrievals })
     save()
@@ -95,6 +115,7 @@ export const useChatStore = defineStore('chat', () => {
     activeConversation,
     loading,
     createConversation,
+    confirmConversationId,
     switchConversation,
     deleteConversation,
     goHome,

@@ -1,43 +1,30 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.ai.agents.rag_agent import ask as agent_ask
-from src.ai.rag.evaluation.retrieval_logger import RetrievalLogger
-from src.ai.rag.evaluation.retrieval_trace import RetrievalTrace
+from src.core.dependencies import get_db
+from src.services.chat_service import ChatService
 from src.models.schemas.rag import RAGQueryRequest, RAGQueryResponse, ToolCallItem
 
 router = APIRouter()
 
-_trace_logger: RetrievalLogger | None = None
-
-
-def _get_trace_logger() -> RetrievalLogger:
-    global _trace_logger
-    if _trace_logger is None:
-        _trace_logger = RetrievalLogger()
-    return _trace_logger
+_chat_service = ChatService()
 
 
 @router.post("/query", response_model=RAGQueryResponse)
-async def rag_query(request: RAGQueryRequest):
-    """RAG 问答：LangGraph Agent 自动检索 + LLM 生成回答"""
-    result = agent_ask(request.query, domain=request.domain)
-
-    tool_calls = result.get("tool_calls", [])
-    retrievals = [ToolCallItem(**tc) for tc in tool_calls]
-    context_preview = "\n---\n".join(tc["content_preview"] for tc in tool_calls)
-
-    _get_trace_logger().log(RetrievalTrace(
+async def rag_query(request: RAGQueryRequest, db: AsyncSession = Depends(get_db)):
+    """Session-aware RAG 问答 pipeline"""
+    result = await _chat_service.handle_query(
         query=request.query,
-        top_k=request.top_k,
-        retrievals=tool_calls,
-        final_context=context_preview,
-        context_length=len(context_preview),
-        answer=result["answer"],
-    ))
+        conversation_id=request.conversation_id,
+        db=db,
+    )
 
     return RAGQueryResponse(
         answer=result["answer"],
-        retrievals=retrievals,
-        context_preview=context_preview,
-        context_length=len(context_preview),
+        conversation_id=result["conversation_id"],
+        domain=result["domain"],
+        retrievals=[ToolCallItem(**tc) for tc in result["retrievals"]],
+        context_preview=result["context_preview"],
+        context_length=result["context_length"],
+        rewritten_query=result.get("rewritten_query"),
     )
