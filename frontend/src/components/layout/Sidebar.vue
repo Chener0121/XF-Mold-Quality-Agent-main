@@ -1,11 +1,12 @@
 <template>
   <div class="sidebar" :class="{ 'sidebar--collapsed': !open }">
-    <!-- 头部：toggle + logo -->
+    <!-- 头部：logo + toggle -->
     <div class="sidebar__header">
-      <button class="sidebar__toggle" @click="$emit('toggle')" :title="open ? '收起侧边栏' : '展开侧边栏'">
-        <Menu :size="20" />
-      </button>
       <span v-if="open" class="sidebar__logo">XF</span>
+      <button class="sidebar__toggle" @click="$emit('toggle')" :title="open ? '收起侧边栏' : '展开侧边栏'">
+        <PanelLeftClose v-if="open" :size="18" />
+        <PanelLeftOpen v-else :size="20" />
+      </button>
     </div>
 
     <!-- 功能按钮 -->
@@ -78,7 +79,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Menu, Plus, Search, MessageSquare, Trash2, UploadCloud, FileText } from 'lucide-vue-next'
+import { Plus, Search, MessageSquare, Trash2, UploadCloud, FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-vue-next'
 import { useChatStore } from '@/stores/chat'
 import { uploadDocument, getTaskStatus } from '@/apis/document'
 
@@ -189,6 +190,10 @@ async function handleUpload(options: any) {
 .sidebar--collapsed {
   width: 56px;
   border-right: none;
+
+  .sidebar__header {
+    justify-content: center;
+  }
 }
 
 /* 头部 */
@@ -197,7 +202,7 @@ async function handleUpload(options: any) {
   padding: 0 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
   flex-shrink: 0;
 }
 
