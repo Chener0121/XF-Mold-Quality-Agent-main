@@ -12,6 +12,16 @@ def get_chat_llm() -> ChatOpenAI:
     )
 
 
+def get_streaming_chat_llm() -> ChatOpenAI:
+    return ChatOpenAI(
+        api_key=settings.LLM_API_KEY,
+        base_url=settings.LLM_API_BASE,
+        model=settings.LLM_MODEL,
+        temperature=0,
+        streaming=True,
+    )
+
+
 def get_embeddings() -> OpenAIEmbeddings:
     return OpenAIEmbeddings(
         api_key=settings.LLM_API_KEY,

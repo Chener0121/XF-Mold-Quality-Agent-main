@@ -37,8 +37,8 @@
               </div>
             </div>
           </div>
-          <!-- 加载动画 -->
-          <div v-if="chatStore.loading" class="msg msg--assistant">
+          <!-- 加载动画：pipeline 前置处理阶段 -->
+          <div v-if="chatStore.loading && !chatStore.streaming" class="msg msg--assistant">
             <div class="msg__body">
               <div class="msg__dots"><span></span><span></span><span></span></div>
             </div>
@@ -71,13 +71,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, nextTick, watch } from 'vue'
+import { ref, reactive, computed, nextTick, watch, onBeforeUnmount } from 'vue'
 import katex from 'katex'
 import { marked } from 'marked'
 import 'katex/dist/katex.min.css'
 import { Bot, ArrowUp, FileSearch, ChevronDown } from 'lucide-vue-next'
 import { useChatStore } from '@/stores/chat'
-import { askQuestion } from '@/apis/rag'
+import { askQuestionStream } from '@/apis/rag'
 
 const chatStore = useChatStore()
 
@@ -165,6 +165,8 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
+let streamAbortController: AbortController | null = null
+
 async function sendMessage() {
   const text = inputText.value.trim()
   if (!text || chatStore.loading) return
@@ -184,26 +186,56 @@ async function sendMessage() {
   scrollToBottom()
 
   chatStore.loading = true
-  try {
-    const convId = chatStore.activeId || undefined
-    const result = await askQuestion(text, convId)
+  chatStore.streaming = false
 
-    // 新会话：用后端返回的 ID 回填
-    if (!chatStore.activeId) {
-      chatStore.confirmConversationId(result.conversation_id)
-    }
+  const convId = chatStore.activeId || undefined
 
-    chatStore.addAssistantMessage(result.answer, result.retrievals)
-  } catch (e: any) {
-    chatStore.addAssistantMessage('抱歉，出了点问题，请稍后重试。')
-  } finally {
-    chatStore.loading = false
-    scrollToBottom()
-  }
+  streamAbortController = askQuestionStream(text, convId, {
+    onMeta(meta) {
+      if (!chatStore.activeId) {
+        chatStore.confirmConversationId(meta.conversation_id)
+      }
+      // 创建空 assistant 消息，切换到 streaming 模式
+      chatStore.addAssistantMessage('')
+      chatStore.streaming = true
+      scrollToBottom()
+    },
+    onToken(token) {
+      chatStore.appendStreamingToken(token)
+      scrollToBottom()
+    },
+    onDone(data) {
+      chatStore.updateRetrievals(
+        data.tool_calls.map(tc => ({
+          tool_name: tc.tool_name,
+          content_preview: tc.content_preview,
+        })),
+      )
+      chatStore.streaming = false
+      chatStore.loading = false
+      scrollToBottom()
+    },
+    onError(message) {
+      if (!chatStore.streaming) {
+        chatStore.addAssistantMessage('抱歉，出了点问题，请稍后重试。')
+      } else {
+        chatStore.updateLastAssistantMessage(
+          chatStore.activeConversation?.messages.at(-1)?.content || '抱歉，出了点问题，请稍后重试。',
+        )
+      }
+      chatStore.streaming = false
+      chatStore.loading = false
+      scrollToBottom()
+    },
+  })
 }
 
 watch(() => chatStore.activeId, () => {
   scrollToBottom()
+})
+
+onBeforeUnmount(() => {
+  streamAbortController?.abort()
 })
 </script>
 

@@ -1,5 +1,7 @@
 """RAG Agent — 基于 LangGraph create_react_agent 的多领域智能体"""
 
+from collections.abc import AsyncGenerator
+
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.prebuilt import create_react_agent
 
@@ -9,12 +11,12 @@ from src.ai.prompts.rag_prompt import (
     RD_AGENT_PROMPT,
 )
 from src.ai.tools.knowledge_search import general_search, quality_search, rd_search
-from src.core.llm_client import get_chat_llm
+from src.core.llm_client import get_streaming_chat_llm
 from src.core.logger import get_logger
 
 logger = get_logger(__name__)
 
-MAX_RECURSION = 7  # 3 次搜索 × 2 步 + 最终回答
+MAX_RECURSION = 7
 
 _agents: dict[str, object] = {}
 
@@ -30,18 +32,15 @@ def _get_agent(domain: str | None) -> object:
     if key not in _agents:
         cfg = _AGENT_CONFIG[key]
         _agents[key] = create_react_agent(
-            model=get_chat_llm(),
+            model=get_streaming_chat_llm(),
             tools=cfg["tools"],
             prompt=cfg["prompt"],
         )
     return _agents[key]
 
 
-def ask(query: str, domain: str | None = None, history: list[dict] | None = None) -> dict:
-    """调用对应领域的 RAG Agent 并返回结果"""
-    agent = _get_agent(domain)
-
-    # 构建消息列表：历史 + 当前 query
+def _build_messages(query: str, history: list[dict] | None = None) -> list:
+    """构建 LLM 消息列表：历史 + 当前 query"""
     messages = []
     if history:
         for h in history:
@@ -50,33 +49,48 @@ def ask(query: str, domain: str | None = None, history: list[dict] | None = None
             else:
                 messages.append(AIMessage(content=h["content"]))
     messages.append(HumanMessage(content=query))
+    return messages
 
-    result = agent.invoke(
+
+async def ask_stream(
+    query: str, domain: str | None = None, history: list[dict] | None = None,
+) -> AsyncGenerator[str | dict, None]:
+    """
+    流式调用 RAG Agent。
+    逐 token yield 字符串，流结束后 yield {"__done__": True, "tool_calls": [...]}。
+    """
+    agent = _get_agent(domain)
+    messages = _build_messages(query, history)
+
+    tool_calls: list[dict] = []
+
+    async for event in agent.astream_events(
         {"messages": messages},
         config={"recursion_limit": MAX_RECURSION},
-    )
+        version="v2",
+    ):
+        kind = event["event"]
 
-    messages = result["messages"]
-
-    # 从消息历史中提取最终 AI 回答
-    answer = ""
-    for msg in reversed(messages):
-        if not isinstance(msg, ToolMessage) and msg.content:
-            answer = msg.content
-            break
-
-    # 提取工具调用记录
-    tool_calls = []
-    for msg in messages:
-        if isinstance(msg, ToolMessage):
+        # 收集工具调用结果
+        if kind == "on_tool_end":
+            output = event["data"].get("output")
+            content = ""
+            if isinstance(output, str):
+                content = output
+            elif hasattr(output, "content"):
+                content = str(output.content)
+            else:
+                content = str(output) if output else ""
             tool_calls.append({
-                "tool_name": msg.name or "",
-                "content_preview": msg.content or "",
+                "tool_name": event.get("name", ""),
+                "content_preview": content,
             })
 
-    logger.info("Agent 完成: domain=%s, messages=%d, tool_calls=%d", domain, len(messages), len(tool_calls))
+        # 流式输出 LLM token
+        if kind == "on_chat_model_stream":
+            chunk = event["data"]["chunk"]
+            token = chunk.content if hasattr(chunk, "content") else ""
+            if token:
+                yield token
 
-    return {
-        "answer": answer,
-        "tool_calls": tool_calls,
-    }
+    yield {"__done__": True, "tool_calls": tool_calls}

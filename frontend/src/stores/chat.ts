@@ -20,6 +20,7 @@ export const useChatStore = defineStore('chat', () => {
   const conversations = ref<Conversation[]>([])
   const activeId = ref('')
   const loading = ref(false)
+  const streaming = ref(false)
 
   const activeConversation = computed(() =>
     conversations.value.find(c => c.id === activeId.value),
@@ -109,11 +110,44 @@ export const useChatStore = defineStore('chat', () => {
     save()
   }
 
+  // ── Streaming 方法 ──
+
+  function appendStreamingToken(token: string) {
+    const conv = activeConversation.value || _pendingConv
+    if (!conv || conv.messages.length === 0) return
+    const lastMsg = conv.messages[conv.messages.length - 1]
+    if (lastMsg.role === 'assistant') {
+      lastMsg.content += token
+    }
+    // 不调用 save()，避免频繁写入 localStorage
+  }
+
+  function updateRetrievals(retrievals: { tool_name: string; content_preview: string }[]) {
+    const conv = activeConversation.value || _pendingConv
+    if (!conv || conv.messages.length === 0) return
+    const lastMsg = conv.messages[conv.messages.length - 1]
+    if (lastMsg.role === 'assistant') {
+      lastMsg.retrievals = retrievals
+      save()
+    }
+  }
+
+  function updateLastAssistantMessage(content: string) {
+    const conv = activeConversation.value || _pendingConv
+    if (!conv || conv.messages.length === 0) return
+    const lastMsg = conv.messages[conv.messages.length - 1]
+    if (lastMsg.role === 'assistant') {
+      lastMsg.content = content
+      save()
+    }
+  }
+
   return {
     conversations,
     activeId,
     activeConversation,
     loading,
+    streaming,
     createConversation,
     confirmConversationId,
     switchConversation,
@@ -121,5 +155,8 @@ export const useChatStore = defineStore('chat', () => {
     goHome,
     addUserMessage,
     addAssistantMessage,
+    appendStreamingToken,
+    updateRetrievals,
+    updateLastAssistantMessage,
   }
 })
