@@ -55,15 +55,21 @@ async def rag_query_stream(request: RAGQueryRequest):
                 # 4. 流式 pipeline
                 full_answer = ""
                 tool_calls: list[dict] = []
+                token_count = 0
+
+                logger.info("SSE stream started: conv=%s", conversation_id[:8])
 
                 async for event_type, data in process_stream(request.query, history):
                     if event_type == "meta":
                         data["conversation_id"] = conversation_id
                     elif event_type == "token":
                         full_answer += data["content"]
+                        token_count += 1
                     elif event_type == "done":
                         tool_calls = data.get("tool_calls", [])
                     yield _sse_event(event_type, data)
+
+                logger.info("SSE stream done: tokens=%d, answer_len=%d", token_count, len(full_answer))
 
                 # 5. 保存 assistant message
                 retrievals_json = json.dumps(tool_calls, ensure_ascii=False)

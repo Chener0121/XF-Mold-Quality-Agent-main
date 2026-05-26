@@ -16,6 +16,15 @@ export default defineConfig({
       usePolling: true,
     },
     proxy: {
+      '/api/v1/rag/query/stream': {
+        target: 'http://api-dev:8000',
+        changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('proxyRes', (_proxyRes, _req, res) => {
+            res.setHeader('X-Accel-Buffering', 'no')
+          })
+        },
+      },
       '/api': {
         target: 'http://api-dev:8000',
         changeOrigin: true,

@@ -64,12 +64,16 @@ async def ask_stream(
 
     tool_calls: list[dict] = []
 
+    token_count = 0
+    event_types: set[str] = set()
+
     async for event in agent.astream_events(
         {"messages": messages},
         config={"recursion_limit": MAX_RECURSION},
         version="v2",
     ):
         kind = event["event"]
+        event_types.add(kind)
 
         # 收集工具调用结果
         if kind == "on_tool_end":
@@ -91,6 +95,9 @@ async def ask_stream(
             chunk = event["data"]["chunk"]
             token = chunk.content if hasattr(chunk, "content") else ""
             if token:
+                token_count += 1
                 yield token
+
+    logger.info("ask_stream done: events=%s, tokens=%d, tool_calls=%d", event_types, token_count, len(tool_calls))
 
     yield {"__done__": True, "tool_calls": tool_calls}
