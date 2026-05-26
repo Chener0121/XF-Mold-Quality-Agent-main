@@ -2,12 +2,15 @@
   <div class="sidebar" :class="{ 'sidebar--collapsed': !open }">
     <!-- 头部：logo + toggle -->
     <div class="sidebar__header">
-      <el-tooltip content="展开侧边栏" placement="right" :disabled="open" :show-after="300">
-        <button class="sidebar__toggle sidebar__toggle--logo" @click="!open && $emit('toggle')">
-          <span class="sidebar__toggle-xf">XF</span>
-          <PanelLeftOpen v-if="!open" class="sidebar__toggle-hover-icon" :size="20" />
-        </button>
-      </el-tooltip>
+      <div class="sidebar__brand">
+        <el-tooltip content="展开侧边栏" placement="right" :disabled="open" :show-after="300">
+          <button class="sidebar__toggle sidebar__toggle--logo" @click="!open && $emit('toggle')">
+            <span class="sidebar__toggle-xf">XF</span>
+            <PanelLeftOpen v-if="!open" class="sidebar__toggle-hover-icon" :size="20" />
+          </button>
+        </el-tooltip>
+        <span v-if="open" class="sidebar__brand-text">模具智能体平台</span>
+      </div>
       <el-tooltip content="收起侧边栏" placement="right" :disabled="open" :show-after="300">
         <button class="sidebar__toggle" @click="$emit('toggle')">
           <PanelLeftClose :size="18" />
@@ -243,6 +246,20 @@ async function handleUpload(options: any) {
   font-weight: 700;
   color: var(--color-primary-500);
   transition: opacity 0.15s;
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar__brand-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-primary-500);
+  white-space: nowrap;
+  margin-top: -4px;
 }
 
 /* 收起态：hover 图标定位 */
