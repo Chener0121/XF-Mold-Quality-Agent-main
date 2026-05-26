@@ -5,20 +5,20 @@
       <div class="card__header">
         <UploadCloud :size="18" />
         <span>文档上传</span>
-        <span class="card__hint">支持 .docx / .pdf 格式的 FMEA、VDA6.4 质量手册</span>
+        <span class="card__hint">支持 .docx 格式的 FMEA、VDA6.4 质量手册</span>
       </div>
       <el-upload
         drag
         :auto-upload="true"
         :show-file-list="false"
-        accept=".pdf,.docx"
+        accept=".docx"
         :before-upload="beforeUpload"
         :http-request="handleUpload"
       >
         <div class="upload-area">
           <UploadCloud :size="28" />
           <p>拖拽或 <em>点击上传</em></p>
-          <span class="upload-area__tip">PDF / DOCX</span>
+          <span class="upload-area__tip">DOCX</span>
         </div>
       </el-upload>
     </div>
@@ -116,8 +116,8 @@ function startPolling(taskId: string) {
 }
 
 function beforeUpload(file: File) {
-  if (!file.name.endsWith('.pdf') && !file.name.endsWith('.docx')) {
-    ElMessage.error('仅支持 PDF、DOCX 格式')
+  if (!file.name.endsWith('.docx')) {
+    ElMessage.error('仅支持 DOCX 格式')
     return false
   }
   if (file.size === 0) {

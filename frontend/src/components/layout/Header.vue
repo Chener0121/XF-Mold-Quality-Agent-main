@@ -1,7 +1,7 @@
 <template>
   <div class="header">
     <div class="header__left">
-      <span class="header__title">XF 模具质量管理助手</span>
+      <span class="header__title">XF模具智能体平台</span>
       <span class="header__subtitle">基于 FMEA/VDA6.4 的智能质量管理平台</span>
     </div>
     <span class="header__time"><Clock :size="15" /> {{ currentTime }}</span>

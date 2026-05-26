@@ -1,7 +1,7 @@
 [project]
 name = "xf-mold-quality-agent"
 version = "0.1.0"
-description = "模具质量管理智能Agent平台 - 基于FMEA与VDA6.4的知识抽取与智能问答系统"
+description = "XF模具智能体平台 - 基于FMEA与VDA6.4的知识抽取与智能问答系统"
 requires-python = ">=3.12"
 dependencies = [
     # FastAPI
