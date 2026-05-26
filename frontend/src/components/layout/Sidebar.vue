@@ -2,25 +2,33 @@
   <div class="sidebar" :class="{ 'sidebar--collapsed': !open }">
     <!-- 头部：logo + toggle -->
     <div class="sidebar__header">
-      <button class="sidebar__toggle sidebar__toggle--logo" @click="!open && $emit('toggle')" :title="open ? '' : '展开侧边栏'">
-        <span class="sidebar__toggle-xf">XF</span>
-        <PanelLeftOpen v-if="!open" class="sidebar__toggle-hover-icon" :size="20" />
-      </button>
-      <button class="sidebar__toggle" @click="$emit('toggle')" title="收起侧边栏">
-        <PanelLeftClose :size="18" />
-      </button>
+      <el-tooltip content="展开侧边栏" placement="right" :disabled="open" :show-after="300">
+        <button class="sidebar__toggle sidebar__toggle--logo" @click="!open && $emit('toggle')">
+          <span class="sidebar__toggle-xf">XF</span>
+          <PanelLeftOpen v-if="!open" class="sidebar__toggle-hover-icon" :size="20" />
+        </button>
+      </el-tooltip>
+      <el-tooltip content="收起侧边栏" placement="right" :disabled="open" :show-after="300">
+        <button class="sidebar__toggle" @click="$emit('toggle')">
+          <PanelLeftClose :size="18" />
+        </button>
+      </el-tooltip>
     </div>
 
     <!-- 功能按钮 -->
     <div class="sidebar__actions">
-      <button class="sidebar__action" :class="{ active: !chatStore.activeId }" @click="chatStore.goHome()" :title="open ? '' : '新建对话'">
-        <span class="sidebar__action-icon"><Plus :size="18" /></span>
-        <span class="sidebar__action-label">New Chat</span>
-      </button>
-      <button class="sidebar__action" :class="{ 'sidebar__action--active': searchOpen }" @click="toggleSearch" :title="open ? '' : '搜索对话'">
-        <span class="sidebar__action-icon"><Search :size="18" /></span>
-        <span class="sidebar__action-label">Search Chats</span>
-      </button>
+      <el-tooltip content="新建对话" placement="right" :disabled="open" :show-after="300">
+        <button class="sidebar__action" :class="{ active: !chatStore.activeId }" @click="chatStore.goHome()">
+          <span class="sidebar__action-icon"><Plus :size="18" /></span>
+          <span class="sidebar__action-label">New Chat</span>
+        </button>
+      </el-tooltip>
+      <el-tooltip content="搜索对话" placement="right" :disabled="open" :show-after="300">
+        <button class="sidebar__action" :class="{ 'sidebar__action--active': searchOpen }" @click="toggleSearch">
+          <span class="sidebar__action-icon"><Search :size="18" /></span>
+          <span class="sidebar__action-label">Search Chats</span>
+        </button>
+      </el-tooltip>
     </div>
 
     <!-- 搜索框（展开态下） -->
@@ -61,10 +69,12 @@
         :before-upload="beforeUpload"
         :http-request="handleUpload"
       >
-        <button class="sidebar__action sidebar__upload-trigger" :title="open ? '' : '上传文档'">
-          <span class="sidebar__action-icon"><UploadCloud :size="18" /></span>
-          <span class="sidebar__action-label">上传文档</span>
-        </button>
+        <el-tooltip content="上传文档" placement="right" :disabled="open" :show-after="300">
+          <button class="sidebar__action sidebar__upload-trigger">
+            <span class="sidebar__action-icon"><UploadCloud :size="18" /></span>
+            <span class="sidebar__action-label">上传文档</span>
+          </button>
+        </el-tooltip>
       </el-upload>
       <!-- 任务列表 -->
       <div v-if="open && tasks.length > 0" class="sidebar__tasks">
