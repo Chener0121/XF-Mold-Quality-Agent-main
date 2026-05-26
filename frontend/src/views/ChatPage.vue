@@ -346,13 +346,15 @@ onBeforeUnmount(() => {
   position: relative;
   display: flex;
   align-items: flex-end;
-  border: 1px solid var(--gray-300);
+  border: none;
   border-radius: 24px;
   padding: 4px 4px 4px 16px;
-  transition: border-color 0.2s, height 0.2s ease, border-radius 0.2s ease, padding 0.2s ease;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.2s, height 0.2s ease, border-radius 0.2s ease, padding 0.2s ease;
 
   &:focus-within {
-    border-color: var(--color-primary-500);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.12);
   }
 
   textarea {
@@ -453,7 +455,7 @@ onBeforeUnmount(() => {
   top: 0;
   left: 0;
   right: 0;
-  bottom: 70px;
+  bottom: 110px;
   overflow-y: auto;
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
