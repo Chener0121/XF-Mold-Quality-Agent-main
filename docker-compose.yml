@@ -78,6 +78,8 @@ services:
       - "5173:5173"
     volumes:
       - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
     depends_on:
       - api-dev
 

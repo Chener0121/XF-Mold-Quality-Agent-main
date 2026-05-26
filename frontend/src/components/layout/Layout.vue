@@ -1,18 +1,17 @@
 <template>
   <div class="layout">
-    <Sidebar />
+    <Sidebar :open="sidebarOpen" @toggle="sidebarOpen = !sidebarOpen" />
     <div class="layout__main">
-      <Header />
-      <div class="layout__content">
-        <router-view />
-      </div>
+      <router-view />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import Sidebar from './Sidebar.vue'
-import Header from './Header.vue'
+
+const sidebarOpen = ref(true)
 </script>
 
 <style scoped lang="less">
@@ -24,20 +23,8 @@ import Header from './Header.vue'
 
 .layout__main {
   flex: 1;
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
-}
-
-.layout__content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  background: var(--gray-25);
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  background: var(--main-0);
+  position: relative;
 }
 </style>
