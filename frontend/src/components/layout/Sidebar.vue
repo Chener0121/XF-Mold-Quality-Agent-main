@@ -193,6 +193,12 @@ async function handleUpload(options: any) {
 
   .sidebar__header {
     justify-content: center;
+    padding: 0;
+  }
+
+  .sidebar__toggle {
+    width: 40px;
+    height: 40px;
   }
 }
 
