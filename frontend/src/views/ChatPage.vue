@@ -79,6 +79,10 @@ import { Bot, ArrowUp, FileSearch, ChevronDown } from 'lucide-vue-next'
 import { useChatStore } from '@/stores/chat'
 import { askQuestionStream } from '@/apis/rag'
 
+// ── 流式 token 批量合并 ──
+let tokenBuffer = ''
+let rafId: number | null = null
+
 const chatStore = useChatStore()
 
 const welcomeTexts = ['Ask Away', 'Ready when you are', 'Any new ideas to explore?', 'Ask Me Anything', "what's on your mind?"]
@@ -94,12 +98,11 @@ function toggleRetrievals(idx: number) {
   showRetrievals[idx] = !showRetrievals[idx]
 }
 
-function renderMessage(msg: any): string {
-  const text = msg.content as string
-  if (msg.role === 'user') {
-    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')
-  }
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
 
+function renderMarkdown(text: string): string {
   const holders: string[] = []
 
   let processed = text.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
@@ -131,11 +134,39 @@ function renderMessage(msg: any): string {
   return html
 }
 
-function scrollToBottom() {
+function renderMessage(msg: any): string {
+  const text = msg.content as string
+  if (msg.role === 'user') {
+    return escapeHtml(text).replace(/\n/g, '<br>')
+  }
+
+  return renderMarkdown(text)
+}
+
+let resizeObserver: ResizeObserver | null = null
+
+// ResizeObserver: 内容高度变化时自动滚动（流式 + 非流式通用）
+watch(messageListRef, (el, _, onCleanup) => {
+  resizeObserver?.disconnect()
+  if (!el) return
+  const inner = el.querySelector('.chat-messages__inner') as HTMLElement
+  if (!inner) return
+  resizeObserver = new ResizeObserver(() => {
+    const dist = el.scrollHeight - el.scrollTop - el.clientHeight
+    if (dist < 120) el.scrollTop = el.scrollHeight
+  })
+  resizeObserver.observe(inner)
+  onCleanup(() => {
+    resizeObserver?.disconnect()
+    resizeObserver = null
+  })
+}, { immediate: true })
+
+function scrollToBottom(smooth = false) {
   nextTick(() => {
-    if (messageListRef.value) {
-      messageListRef.value.scrollTop = messageListRef.value.scrollHeight
-    }
+    const el = messageListRef.value
+    if (!el) return
+    el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'instant' })
   })
 }
 
@@ -163,6 +194,14 @@ function handleKeydown(e: KeyboardEvent) {
     e.preventDefault()
     sendMessage()
   }
+}
+
+function flushTokenBuffer() {
+  if (tokenBuffer) {
+    chatStore.appendStreamingToken(tokenBuffer)
+    tokenBuffer = ''
+  }
+  rafId = null
 }
 
 let streamAbortController: AbortController | null = null
@@ -201,10 +240,22 @@ async function sendMessage() {
       scrollToBottom()
     },
     onToken(token) {
-      chatStore.appendStreamingToken(token)
-      scrollToBottom()
+      // 批量合并 token，每帧只 flush 一次
+      tokenBuffer += token
+      if (!rafId) {
+        rafId = requestAnimationFrame(flushTokenBuffer)
+      }
     },
     onDone(data) {
+      // 立即刷出剩余 token
+      if (rafId) {
+        cancelAnimationFrame(rafId)
+        rafId = null
+      }
+      if (tokenBuffer) {
+        chatStore.appendStreamingToken(tokenBuffer)
+        tokenBuffer = ''
+      }
       chatStore.updateRetrievals(
         data.tool_calls.map(tc => ({
           tool_name: tc.tool_name,
@@ -215,12 +266,12 @@ async function sendMessage() {
       chatStore.loading = false
       scrollToBottom()
     },
-    onError(message) {
+    onError(_message) {
       if (!chatStore.streaming) {
         chatStore.addAssistantMessage('抱歉，出了点问题，请稍后重试。')
       } else {
         chatStore.updateLastAssistantMessage(
-          chatStore.activeConversation?.messages.at(-1)?.content || '抱歉，出了点问题，请稍后重试。',
+          chatStore.activeConversation?.messages.slice(-1)[0]?.content || '抱歉，出了点问题，请稍后重试。',
         )
       }
       chatStore.streaming = false
@@ -236,6 +287,8 @@ watch(() => chatStore.activeId, () => {
 
 onBeforeUnmount(() => {
   streamAbortController?.abort()
+  if (rafId) cancelAnimationFrame(rafId)
+  resizeObserver?.disconnect()
 })
 </script>
 
