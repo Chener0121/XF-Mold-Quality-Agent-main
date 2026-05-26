@@ -279,7 +279,7 @@ watch(() => chatStore.activeId, () => {
   transition: height 0.2s ease, border-radius 0.2s ease, padding 0.2s ease;
 
   textarea {
-    font-size: 16px;
+    font-size: 16px !important;
     padding: 0;
   }
 
