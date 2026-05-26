@@ -2,9 +2,9 @@
   <div class="sidebar" :class="{ 'sidebar--collapsed': !open }">
     <!-- 头部：logo + toggle -->
     <div class="sidebar__header">
-      <button class="sidebar__toggle sidebar__toggle--logo" @click="$emit('toggle')" :title="open ? '收起侧边栏' : '展开侧边栏'">
+      <button class="sidebar__toggle sidebar__toggle--logo" @click="!open && $emit('toggle')" :title="open ? '' : '展开侧边栏'">
         <span class="sidebar__toggle-xf">XF</span>
-        <PanelLeftOpen class="sidebar__toggle-hover-icon" :size="20" />
+        <PanelLeftOpen v-if="!open" class="sidebar__toggle-hover-icon" :size="20" />
       </button>
       <button class="sidebar__toggle" @click="$emit('toggle')" title="收起侧边栏">
         <PanelLeftClose :size="18" />
@@ -228,23 +228,20 @@ async function handleUpload(options: any) {
   position: relative;
 }
 
-.sidebar__toggle-xf,
-.sidebar__toggle-hover-icon {
-  position: absolute;
-  transition: opacity 0.15s;
-}
-
 .sidebar__toggle-xf {
   font-size: 16px;
   font-weight: 700;
   color: var(--color-primary-500);
+  transition: opacity 0.15s;
 }
 
+/* 收起态：hover 图标定位 */
 .sidebar__toggle-hover-icon {
+  position: absolute;
   opacity: 0;
+  transition: opacity 0.15s;
 }
 
-/* 收起态 hover：XF → 展开图标 */
 .sidebar--collapsed .sidebar__toggle--logo:hover .sidebar__toggle-xf {
   opacity: 0;
 }
@@ -311,7 +308,7 @@ async function handleUpload(options: any) {
 
 /* 搜索框 */
 .sidebar__search {
-  padding: 0 16px 8px;
+  padding: 8px 16px;
 }
 
 .sidebar__search-input {
@@ -401,8 +398,7 @@ async function handleUpload(options: any) {
 
 /* 底部 */
 .sidebar__footer {
-  border-top: 1px solid var(--gray-200);
-  padding: 8px 8px;
+  padding: 8px;
   margin-top: auto;
 
   :deep(.el-upload) {
