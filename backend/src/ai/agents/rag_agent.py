@@ -67,6 +67,8 @@ async def ask_stream(
 
     token_count = 0
     event_types: set[str] = set()
+    tool_phase_passed = False
+    pending: list[str] = []  # 工具调用前的 token 缓冲（可能是推理文本）
 
     async for event in agent.astream_events(
         {"messages": messages},
@@ -78,6 +80,8 @@ async def ask_stream(
 
         # 收集工具调用结果
         if kind == "on_tool_end":
+            tool_phase_passed = True
+            pending.clear()  # 工具调用前的 token 是推理文本，丢弃
             output = event["data"].get("output")
             content = ""
             if isinstance(output, str):
@@ -94,10 +98,20 @@ async def ask_stream(
         # 流式输出 LLM token
         if kind == "on_chat_model_stream":
             chunk = event["data"]["chunk"]
+            if getattr(chunk, "tool_calls", None) or getattr(chunk, "tool_call_chunks", None):
+                continue
             token = chunk.content if hasattr(chunk, "content") else ""
             if token:
-                token_count += 1
-                yield token
+                if tool_phase_passed:
+                    token_count += 1
+                    yield token
+                else:
+                    pending.append(token)
+
+    # 无工具调用时，输出缓冲的 token（LLM 直接回答）
+    for t in pending:
+        token_count += 1
+        yield t
 
     logger.info("ask_stream done: events=%s, tokens=%d, tool_calls=%d", event_types, token_count, len(tool_calls))
 
