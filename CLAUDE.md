@@ -13,98 +13,106 @@ project-root/
 │   │   ├── main.py                        # FastAPI 入口
 │   │   │
 │   │   ├── core/                          # 核心基础设施
-│   │   │   ├── config.py
-│   │   │   ├── dependencies.py
-│   │   │   ├── exceptions.py
-│   │   │   ├── middleware.py
-│   │   │   ├── logger.py
-│   │   │   └── llm_client.py
+│   │   │   ├── config.py                  #   Pydantic Settings 配置
+│   │   │   ├── dependencies.py            #   依赖注入（DB session 等）
+│   │   │   ├── exceptions.py              #   自定义异常 + 全局异常处理
+│   │   │   ├── middleware.py              #   请求日志中间件
+│   │   │   ├── logger.py                  #   logging 配置
+│   │   │   ├── llm_client.py              #   LLM 客户端工厂
+│   │   │   └── vlm_client.py              #   视觉语言模型客户端
 │   │   │
-│   │   ├── api/                           # API层
+│   │   ├── api/                           # API 层
 │   │   │   └── v1/
 │   │   │       ├── endpoints/
-│   │   │       │   ├── chat.py
-│   │   │       │   ├── document.py
-│   │   │       │   └── health.py
+│   │   │       │   ├── document.py        #   文档上传 + 任务状态 + debug/blocks
+│   │   │       │   ├── health.py          #   健康检查
+│   │   │       │   └── rag.py             #   RAG 智能问答
 │   │   │       │
-│   │   │       └── router.py
+│   │   │       └── router.py              #   路由注册
 │   │   │
 │   │   ├── models/                        # 数据模型
-│   │   │   ├── entities/
+│   │   │   ├── entities/                  #   SQLAlchemy ORM（预留）
 │   │   │   │   ├── document.py
 │   │   │   │   ├── chunk.py
 │   │   │   │   └── conversation.py
 │   │   │   │
-│   │   │   └── schemas/
-│   │   │       ├── document.py
-│   │   │       ├── chat.py
-│   │   │       └── common.py
+│   │   │   └── schemas/                   #   Pydantic 请求/响应模型
+│   │   │       ├── document.py            #     DocumentResponse, TaskStatusResponse
+│   │   │       ├── rag.py                 #     RAGQueryRequest, RAGQueryResponse
+│   │   │       └── common.py              #     PageResponse[T] 分页泛型
 │   │   │
-│   │   ├── repositories/                  # 数据访问层
+│   │   ├── repositories/                  # 数据访问层（预留）
 │   │   │   ├── document_repository.py
 │   │   │   ├── chunk_repository.py
 │   │   │   └── conversation_repository.py
 │   │   │
 │   │   ├── services/                      # 业务逻辑层
-│   │   │   ├── document_service.py
-│   │   │   ├── rag_service.py
-│   │   │   └── chat_service.py
+│   │   │   └── document_service.py        #   文档处理流水线（解析→语义→VLM→分块→嵌入→入库）
 │   │   │
-│   │   ├── ai/                            # AI核心
+│   │   ├── ai/                            # AI 核心
 │   │   │   ├── agents/
+│   │   │   │   └── rag_agent.py           #   LangGraph ReAct Agent（quality/rd/general）
 │   │   │   ├── prompts/
+│   │   │   │   └── rag_prompt.py          #   Agent system prompts
 │   │   │   ├── tools/
-│   │   │   ├── memory/
+│   │   │   │   └── knowledge_search.py    #   LangChain Tool: 知识库检索
 │   │   │   │
-│   │   │   ├── rag/
-│   │   │   │   ├── embeddings/
-│   │   │   │   ├── retrievers/
-│   │   │   │   ├── rerankers/
-│   │   │   │   ├── vectorstores/
-│   │   │   │   └── pipelines/
-│   │   │   │
-│   │   │   └── workflows/
+│   │   │   └── rag/
+│   │   │       ├── cache/                 #   处理缓存（文档/VLM/Embedding）
+│   │   │       │   ├── document_cache.py
+│   │   │       │   ├── vlm_cache.py
+│   │   │       │   ├── embedding_cache.py
+│   │   │       │   └── hash_utils.py
+│   │   │       ├── embeddings/
+│   │   │       │   ├── embedder.py        #   OpenAI 兼容 Embedding 客户端
+│   │   │       │   ├── pipeline.py        #   Embedding 流水线（缓存+批量嵌入）
+│   │   │       │   └── models.py          #   EmbeddedBlock 模型
+│   │   │       ├── retrievers/
+│   │   │       │   ├── retriever.py       #   混合检索（向量 + BM25 + RRF 融合）
+│   │   │       │   ├── bm25_index.py      #   BM25 关键词索引
+│   │   │       │   ├── context_builder.py #   检索结果格式化
+│   │   │       │   ├── domain_classifier.py # 领域分类（quality/rd）
+│   │   │       │   ├── models.py          #   RetrievalResult 模型
+│   │   │       │   └── evaluation/        #   检索评估日志
+│   │   │       └── vectorstores/
+│   │   │           └── chroma_store.py    #   ChromaDB 向量存储
 │   │   │
 │   │   ├── document/                      # 文档理解核心
-│   │   │   ├── parsers/                   # docx/pdf解析
-│   │   │   └── processors/                # 后处理
+│   │   │   ├── parsers/
+│   │   │   │   └── docx_parser.py         #   docx 解析（段落/表格/图片）
+│   │   │   └── processors/
+│   │   │       ├── semantic_processor.py  #   标题层级传播 + 短块合并
+│   │   │       ├── semantic_block.py      #   SemanticBlock 模型
+│   │   │       ├── chunker.py             #   语义分块（句子级拆分+重叠）
+│   │   │       └── vlm_processor.py       #   VLM 图片理解（乌龟图等）
 │   │   │
-│   │   ├── storage/
+│   │   ├── storage/                       # 存储层（预留）
 │   │   │   ├── postgres/
 │   │   │   ├── pgvector/
 │   │   │   └── minio/
 │   │   │
 │   │   └── utils/
-│   │       ├── file.py
-│   │       ├── markdown.py
-│   │       └── text.py
+│   │       ├── file.py                    #   文件哈希
+│   │       ├── markdown.py                #   Markdown 清理
+│   │       └── text.py                    #   文本工具
 │   │
 │   ├── docs/
-│   │   └── api-reference.md
+│   │   └── api-reference.md               # API 接口文档
 │   │
 │   └── tests/
 │       ├── unit/
 │       └── integration/
 │
 ├── docker/
-│   ├──api.Dockerfile
-│   ├── web.Dockerfile
-│   ├──nginx.conf
-│   │
-│   ├── postgres/
-│   │   └── init.sql
-│   │
-│   └── minio/
+│   ├── api.Dockerfile                      # 生产环境
+│   ├── api-dev.Dockerfile                  # 开发环境（热重载）
+│   ├── web.Dockerfile                      # 前端构建
+│   └── nginx.conf
 │
-├── volumes/                               # Docker 数据卷（不要提交Git）
-│   ├── postgres/
-│   ├── minio/
-│   └── redis/
-│
-├── .env
+├── .env                                    # 环境变量
 ├── .gitignore
-├── docker-compose.yml                     # 开发时使用
-├── docker-compose.prod.yml                # 部署云服务器时使用
+├── docker-compose.yml                      # 开发环境
+├── docker-compose.prod.yml                 # 生产部署
 ├── CLAUDE.md
 └── README.md
 

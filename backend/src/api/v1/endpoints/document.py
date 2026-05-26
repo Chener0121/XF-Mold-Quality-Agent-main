@@ -4,7 +4,7 @@ import tempfile
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, UploadFile
+from fastapi import APIRouter, HTTPException, UploadFile, status
 
 from src.models.schemas.document import DocumentResponse, TaskStatusResponse
 from src.services.document_service import DocumentService
@@ -26,15 +26,14 @@ def _get_service() -> DocumentService:
     return _service
 
 
-@router.post("", response_model=DocumentResponse)
+@router.post("", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(file: UploadFile):
     """上传文档，立即返回任务 ID，后台异步处理"""
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in (".docx", ".pdf"):
-        return DocumentResponse(
-            id="",
-            filename=file.filename,
-            status="rejected: 仅支持 .docx / .pdf",
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="仅支持 .docx / .pdf 格式",
         )
 
     # 保存上传文件
@@ -91,13 +90,7 @@ async def get_task_status(task_id: str):
     """查询文档处理进度"""
     task = _tasks.get(task_id)
     if not task:
-        return TaskStatusResponse(
-            task_id=task_id,
-            filename="",
-            stage="not_found",
-            progress={},
-            status="not_found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="任务不存在")
     return task
 
 
