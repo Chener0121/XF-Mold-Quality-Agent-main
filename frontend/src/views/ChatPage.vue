@@ -5,7 +5,9 @@
       <div class="chat-welcome__inner">
         <h2 class="chat-welcome__title">Ask Away</h2>
 
-        <div class="chat-input__inner chat-input__inner--welcome">
+        <div class="chat-input__inner chat-input__inner--welcome"
+             :class="{ 'chat-input__inner--multiline': lineCount > 1 }"
+             :style="{ height: welcomeInputHeight + 'px' }">
           <textarea
             ref="inputRef"
             v-model="inputText"
@@ -93,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, nextTick, watch } from 'vue'
+import { ref, reactive, computed, nextTick, watch } from 'vue'
 import katex from 'katex'
 import { marked } from 'marked'
 import 'katex/dist/katex.min.css'
@@ -106,6 +108,8 @@ const inputText = ref('')
 const inputRef = ref<HTMLTextAreaElement>()
 const messageListRef = ref<HTMLElement>()
 const showRetrievals = reactive<Record<number, boolean>>({})
+const lineCount = ref(1)
+const welcomeInputHeight = computed(() => lineCount.value <= 1 ? 64 : Math.min(lineCount.value, 7) * 24 + 78)
 
 function toggleRetrievals(idx: number) {
   showRetrievals[idx] = !showRetrievals[idx]
@@ -159,8 +163,22 @@ function scrollToBottom() {
 function autoResize() {
   const el = inputRef.value
   if (!el) return
-  el.style.height = 'auto'
-  el.style.height = Math.min(el.scrollHeight, 200) + 'px'
+
+  // 临时移除 padding 和 height，测量纯内容高度
+  el.style.height = '0'
+  el.style.paddingTop = '0'
+  el.style.paddingBottom = '0'
+
+  const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 24
+  const lines = Math.max(1, Math.round(el.scrollHeight / lineHeight))
+
+  // 恢复，让 CSS class 控制实际样式
+  el.style.height = ''
+  el.style.paddingTop = ''
+  el.style.paddingBottom = ''
+
+  lineCount.value = lines
+  el.style.overflowY = lines > 7 ? 'auto' : ''
 }
 
 function handleKeydown(e: KeyboardEvent) {
@@ -181,7 +199,11 @@ async function sendMessage() {
 
   chatStore.addUserMessage(text)
   inputText.value = ''
-  if (inputRef.value) inputRef.value.style.height = 'auto'
+  lineCount.value = 1
+  if (inputRef.value) {
+    inputRef.value.style.height = ''
+    inputRef.value.style.overflowY = ''
+  }
   scrollToBottom()
 
   chatStore.loading = true
@@ -246,7 +268,7 @@ watch(() => chatStore.activeId, () => {
   }
 }
 
-/* 欢迎页输入框 */
+/* 欢迎页输入框 - 单行药丸 */
 .chat-input__inner--welcome {
   width: 660px;
   max-width: 100%;
@@ -254,6 +276,7 @@ watch(() => chatStore.activeId, () => {
   border-radius: 32px !important;
   padding: 0 16px 0 24px !important;
   align-items: center !important;
+  transition: height 0.2s ease, border-radius 0.2s ease, padding 0.2s ease;
 
   textarea {
     font-size: 16px;
@@ -264,6 +287,29 @@ watch(() => chatStore.activeId, () => {
     width: 32px;
     height: 32px;
     flex-shrink: 0;
+    position: relative;
+    transition: all 0.25s ease;
+  }
+}
+
+/* 欢迎页输入框 - 多行展开 */
+.chat-input__inner--welcome.chat-input__inner--multiline {
+  border-radius: 20px !important;
+  padding: 0 !important;
+
+  textarea {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    box-sizing: border-box;
+    padding: 26px 56px 52px 24px;
+    overflow-y: hidden;
+  }
+
+  .chat-input__send {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
   }
 }
 
