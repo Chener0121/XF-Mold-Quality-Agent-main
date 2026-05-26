@@ -271,6 +271,10 @@ async function sendMessage() {
         chatStore.appendStreamingToken(tokenBuffer)
         tokenBuffer = ''
       }
+      // 无工具调用时，thinking 实际是直接回答，移到 answer
+      if (!data.tool_calls?.length) {
+        chatStore.moveThinkingToAnswer()
+      }
       chatStore.updateRetrievals(
         data.tool_calls.map(tc => ({
           tool_name: tc.tool_name,

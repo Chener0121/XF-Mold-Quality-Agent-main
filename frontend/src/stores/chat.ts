@@ -132,6 +132,17 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  function moveThinkingToAnswer() {
+    const conv = activeConversation.value || _pendingConv
+    if (!conv || conv.messages.length === 0) return
+    const lastMsg = conv.messages[conv.messages.length - 1]
+    if (lastMsg.role === 'assistant' && lastMsg.thinking && !lastMsg.content.trim()) {
+      lastMsg.content = lastMsg.thinking
+      delete lastMsg.thinking
+      save()
+    }
+  }
+
   function updateRetrievals(retrievals: { tool_name: string; content_preview: string }[]) {
     const conv = activeConversation.value || _pendingConv
     if (!conv || conv.messages.length === 0) return
@@ -167,6 +178,7 @@ export const useChatStore = defineStore('chat', () => {
     addAssistantMessage,
     appendStreamingToken,
     appendThinkingToken,
+    moveThinkingToAnswer,
     updateRetrievals,
     updateLastAssistantMessage,
   }
