@@ -157,4 +157,9 @@
 body {
   margin: 0;
   overflow: hidden;
+  background: var(--main-0, #ffffff);
+}
+
+[v-cloak] {
+  display: none;
 }

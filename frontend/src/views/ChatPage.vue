@@ -4,7 +4,6 @@
     <div v-if="!chatStore.activeConversation" class="chat-welcome">
       <div class="chat-welcome__inner">
         <h2 class="chat-welcome__title">Ask Away</h2>
-        <p class="chat-welcome__desc">基于 FMEA 和 VDA6.4 质量手册的智能问答</p>
 
         <div class="chat-input__inner chat-input__inner--welcome">
           <textarea
@@ -94,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, nextTick, onMounted, watch } from 'vue'
+import { ref, reactive, nextTick, watch } from 'vue'
 import katex from 'katex'
 import { marked } from 'marked'
 import 'katex/dist/katex.min.css'
@@ -197,10 +196,6 @@ async function sendMessage() {
   }
 }
 
-onMounted(() => {
-  chatStore.load()
-})
-
 watch(() => chatStore.activeId, () => {
   scrollToBottom()
 })
@@ -236,13 +231,19 @@ watch(() => chatStore.activeId, () => {
   font-size: 32px;
   font-weight: 600;
   color: var(--main-900);
-  margin: 0 0 8px;
+  margin: 0 0 24px;
+  animation: fade-up 0.5s ease both;
 }
 
-.chat-welcome__desc {
-  font-size: 15px;
-  color: var(--gray-500);
-  margin: 0 0 40px;
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 欢迎页输入框 */

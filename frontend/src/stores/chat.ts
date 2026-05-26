@@ -25,16 +25,15 @@ export const useChatStore = defineStore('chat', () => {
     conversations.value.find(c => c.id === activeId.value),
   )
 
-  function load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) {
-        const data = JSON.parse(raw)
-        conversations.value = data.conversations || []
-        activeId.value = data.activeId || ''
-      }
-    } catch { /* ignore */ }
-  }
+  // 立即从 localStorage 加载，避免首次渲染闪烁
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      const data = JSON.parse(raw)
+      conversations.value = data.conversations || []
+      activeId.value = data.activeId || ''
+    }
+  } catch { /* ignore */ }
 
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -95,7 +94,6 @@ export const useChatStore = defineStore('chat', () => {
     activeId,
     activeConversation,
     loading,
-    load,
     createConversation,
     switchConversation,
     deleteConversation,
