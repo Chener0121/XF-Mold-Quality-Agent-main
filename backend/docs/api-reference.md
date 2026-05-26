@@ -102,7 +102,7 @@
 
 `POST /api/v1/chat/completions`
 
-基于 LangGraph ReAct Agent 自动检索知识库并生成回答。支持多轮对话上下文，自动领域路由。
+基于 LangGraph ReAct Agent 自动检索知识库并生成回答。支持多轮对话上下文，自动领域路由。响应为 **SSE（Server-Sent Events）** 流式输出。
 
 **请求体:**
 ```json
@@ -117,22 +117,32 @@
 | `query` | string | 必填 | 用户问题 |
 | `conversation_id` | string \| null | `null` | 已有会话 ID，为空则创建新会话 |
 
-**响应** (`200 OK`):
-```json
-{
-  "answer": "根据FMEA手册，C6生产过程的主要失效模式包括...",
-  "conversation_id": "uuid",
-  "domain": "quality",
-  "retrievals": [
-    {
-      "tool_name": "knowledge_search",
-      "content_preview": "C6 生产过程 失效模式..."
-    }
-  ],
-  "context_preview": "片段1内容...\n---\n片段2内容...",
-  "context_length": 2340,
-  "rewritten_query": null
-}
+**响应** (`200 OK`, `Content-Type: text/event-stream`):
+
+SSE 事件按顺序输出，格式为 `event: <type>\ndata: <json>\n\n`。
+
+| 事件类型 | 说明 | data 示例 |
+|----------|------|-----------|
+| `meta` | 前置元信息（会话 ID、领域、改写 query） | `{"conversation_id": "uuid", "domain": "quality", "rewritten_query": null}` |
+| `token` | 逐 token 输出（多次触发） | `{"content": "根据FMEA手册"}` |
+| `done` | 流结束，附带工具调用记录 | `{"tool_calls": [{"tool_name": "knowledge_search", "content_preview": "..."}]}` |
+| `error` | 错误信息 | `{"message": "错误描述"}` |
+
+**SSE 响应示例:**
+```
+event: meta
+data: {"conversation_id": "uuid", "domain": "quality", "rewritten_query": null}
+
+event: token
+data: {"content": "根据"}
+
+event: token
+data: {"content": "FMEA手册"}
+
+...
+
+event: done
+data: {"tool_calls": [{"tool_name": "knowledge_search", "content_preview": "C6 生产过程 失效模式..."}]}
 ```
 
 ---
