@@ -16,7 +16,7 @@ export default defineConfig({
       usePolling: true,
     },
     proxy: {
-      '/api/v1/rag/query/stream': {
+      '/api/v1/chat/completions': {
         target: 'http://api-dev:8000',
         changeOrigin: true,
         configure: (proxy) => {

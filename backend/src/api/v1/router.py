@@ -6,5 +6,5 @@ api_router = APIRouter()
 
 api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(document.router, prefix="/documents", tags=["documents"])
-api_router.include_router(rag.router, prefix="/rag", tags=["rag"])
+api_router.include_router(rag.router, prefix="/chat", tags=["chat"])
 api_router.include_router(conversation.router, prefix="/conversations", tags=["conversations"])

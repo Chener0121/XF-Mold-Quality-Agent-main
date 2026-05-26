@@ -1,11 +1,11 @@
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.dependencies import get_db
 from src.repositories.conversation_repository import ConversationRepository
-from src.models.schemas.rag import (
+from src.models.schemas.conversation import (
     ConversationDetailResponse,
     ConversationListResponse,
     ConversationResponse,
@@ -41,7 +41,7 @@ async def get_conversation(
     repo = ConversationRepository(db)
     conv = await repo.get_conversation(conversation_id)
     if not conv:
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="会话不存在")
 
     messages = []
     for msg in conv.messages:
@@ -77,5 +77,5 @@ async def delete_conversation(
     repo = ConversationRepository(db)
     conv = await repo.get_conversation(conversation_id)
     if not conv:
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="会话不存在")
     await repo.delete_conversation(conversation_id)

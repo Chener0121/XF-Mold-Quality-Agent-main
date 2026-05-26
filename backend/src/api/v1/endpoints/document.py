@@ -94,8 +94,8 @@ async def get_task_status(task_id: str):
     return task
 
 
-@router.post("/debug/blocks")
-async def debug_blocks(file: UploadFile):
+@router.post("/analysis", response_model=dict)
+async def analyze_document(file: UploadFile):
     """调试接口：解析文档到 semantic blocks，不走 VLM/embedding，用于验证 heading_path"""
     suffix = Path(file.filename or "").suffix.lower()
     if suffix != ".docx":

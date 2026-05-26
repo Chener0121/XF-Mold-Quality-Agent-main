@@ -33,6 +33,7 @@ services:
     volumes:
       - ./backend/src:/app/backend/src
       - ./backend/tests:/app/backend/tests
+      - ./backend/scripts:/app/backend/scripts
       - ./pyproject.toml:/app/pyproject.toml
       - chroma-data:/app/chroma_data
       - cache-data:/app/cache

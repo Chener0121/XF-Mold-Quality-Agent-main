@@ -3,6 +3,7 @@
 from collections.abc import AsyncGenerator
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
 
 from src.ai.prompts.rag_prompt import (
@@ -18,7 +19,7 @@ logger = get_logger(__name__)
 
 MAX_RECURSION = 7
 
-_agents: dict[str, object] = {}
+_agents: dict[str, CompiledStateGraph] = {}
 
 _AGENT_CONFIG = {
     "quality": {"prompt": QUALITY_AGENT_PROMPT, "tools": [quality_search]},
@@ -27,7 +28,7 @@ _AGENT_CONFIG = {
 }
 
 
-def _get_agent(domain: str | None) -> object:
+def _get_agent(domain: str | None) -> CompiledStateGraph:
     key = domain if domain in _AGENT_CONFIG else "general"
     if key not in _agents:
         cfg = _AGENT_CONFIG[key]

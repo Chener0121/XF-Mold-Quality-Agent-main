@@ -12,7 +12,7 @@ export function askQuestionStream(
 ): AbortController {
   const controller = new AbortController()
 
-  fetch('/api/v1/rag/query/stream', {
+  fetch('/api/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, conversation_id: conversationId || null }),

@@ -35,3 +35,6 @@ logs/
 
 # Chroma
 chroma_data/
+
+# Eval
+eval_dataset.json

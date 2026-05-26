@@ -24,9 +24,10 @@ project-root/
 │   │   ├── api/                           # API 层
 │   │   │   └── v1/
 │   │   │       ├── endpoints/
-│   │   │       │   ├── document.py        #   文档上传 + 任务状态 + debug/blocks
+│   │   │       │   ├── document.py        #   文档上传 + 任务状态 + 文档分析
 │   │   │       │   ├── health.py          #   健康检查
-│   │   │       │   └── rag.py             #   RAG 智能问答
+│   │   │       │   ├── rag.py             #   智能问答（SSE 流式）
+│   │   │       │   └── conversation.py    #   会话管理
 │   │   │       │
 │   │   │       └── router.py              #   路由注册
 │   │   │
@@ -39,6 +40,7 @@ project-root/
 │   │   │   └── schemas/                   #   Pydantic 请求/响应模型
 │   │   │       ├── document.py            #     DocumentResponse, TaskStatusResponse
 │   │   │       ├── rag.py                 #     RAGQueryRequest, RAGQueryResponse
+│   │   │       ├── conversation.py        #     会话/消息响应模型
 │   │   │       └── common.py              #     PageResponse[T] 分页泛型
 │   │   │
 │   │   ├── repositories/                  # 数据访问层（预留）
@@ -56,6 +58,13 @@ project-root/
 │   │   │   │   └── rag_prompt.py          #   Agent system prompts
 │   │   │   ├── tools/
 │   │   │   │   └── knowledge_search.py    #   LangChain Tool: 知识库检索
+│   │   │   ├── chat/                      #   对话编排
+│   │   │   │   ├── query_pipeline.py      #     流式 query pipeline
+│   │   │   │   ├── history_manager.py     #     Token-aware 历史截断
+│   │   │   │   ├── query_rewriter.py      #     Query 改写
+│   │   │   │   └── rewrite_trigger.py     #     改写触发判断
+│   │   │   ├── router/
+│   │   │   │   └── domain_router.py       #     领域路由（keyword + retrieval）
 │   │   │   │
 │   │   │   └── rag/
 │   │   │       ├── cache/                 #   处理缓存（文档/VLM/Embedding）

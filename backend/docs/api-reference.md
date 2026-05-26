@@ -70,9 +70,9 @@
 { "detail": "任务不存在" }
 ```
 
-#### 调试：解析语义块
+#### 分析文档结构
 
-`POST /api/v1/documents/debug/blocks`
+`POST /api/v1/documents/analysis`
 
 仅支持 `.docx`。解析文档到 SemanticBlock 并返回，**不走 VLM、Embedding、入库**，用于验证 heading_path 等解析结果。
 
@@ -98,9 +98,9 @@
 
 ---
 
-### RAG 智能问答
+### 智能问答
 
-`POST /api/v1/rag/query`
+`POST /api/v1/chat/completions`
 
 基于 LangGraph ReAct Agent 自动检索知识库并生成回答。支持多轮对话上下文，自动领域路由。
 
