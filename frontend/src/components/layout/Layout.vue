@@ -11,7 +11,7 @@
 import { ref } from 'vue'
 import Sidebar from './Sidebar.vue'
 
-const sidebarOpen = ref(true)
+const sidebarOpen = ref(false)
 </script>
 
 <style scoped lang="less">

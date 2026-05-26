@@ -2,10 +2,12 @@
   <div class="sidebar" :class="{ 'sidebar--collapsed': !open }">
     <!-- 头部：logo + toggle -->
     <div class="sidebar__header">
-      <span v-if="open" class="sidebar__logo">XF</span>
-      <button class="sidebar__toggle" @click="$emit('toggle')" :title="open ? '收起侧边栏' : '展开侧边栏'">
-        <PanelLeftClose v-if="open" :size="18" />
-        <PanelLeftOpen v-else :size="20" />
+      <button class="sidebar__toggle sidebar__toggle--logo" @click="$emit('toggle')" :title="open ? '收起侧边栏' : '展开侧边栏'">
+        <span class="sidebar__toggle-xf">XF</span>
+        <PanelLeftOpen class="sidebar__toggle-hover-icon" :size="20" />
+      </button>
+      <button class="sidebar__toggle" @click="$emit('toggle')" title="收起侧边栏">
+        <PanelLeftClose :size="18" />
       </button>
     </div>
 
@@ -190,16 +192,6 @@ async function handleUpload(options: any) {
 .sidebar--collapsed {
   width: 56px;
   border-right: none;
-
-  .sidebar__header {
-    justify-content: center;
-    padding: 0;
-  }
-
-  .sidebar__toggle {
-    width: 40px;
-    height: 40px;
-  }
 }
 
 /* 头部 */
@@ -208,13 +200,12 @@ async function handleUpload(options: any) {
   padding: 0 8px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   flex-shrink: 0;
 }
 
 .sidebar__toggle {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: 50%;
   background: transparent;
@@ -224,23 +215,47 @@ async function handleUpload(options: any) {
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.15s, width 0.2s ease, height 0.2s ease;
+  transition: background 0.15s;
+  padding: 0;
 
   &:hover {
     background: var(--gray-100);
   }
 }
 
-.sidebar__logo {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
+/* XF logo 按钮 */
+.sidebar__toggle--logo {
+  position: relative;
+}
+
+.sidebar__toggle-xf,
+.sidebar__toggle-hover-icon {
+  position: absolute;
+  transition: opacity 0.15s;
+}
+
+.sidebar__toggle-xf {
+  font-size: 16px;
   font-weight: 700;
   color: var(--color-primary-500);
-  white-space: nowrap;
+}
+
+.sidebar__toggle-hover-icon {
+  opacity: 0;
+}
+
+/* 收起态 hover：XF → 展开图标 */
+.sidebar--collapsed .sidebar__toggle--logo:hover .sidebar__toggle-xf {
+  opacity: 0;
+}
+
+.sidebar--collapsed .sidebar__toggle--logo:hover .sidebar__toggle-hover-icon {
+  opacity: 1;
+}
+
+/* 关闭按钮：展开时靠右，收起时被 overflow 裁掉 */
+.sidebar__header > .sidebar__toggle:last-child {
+  margin-left: auto;
 }
 
 /* 功能按钮 */
