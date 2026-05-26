@@ -12,12 +12,12 @@
     <!-- 功能按钮 -->
     <div class="sidebar__actions">
       <button class="sidebar__action" @click="chatStore.createConversation()" :title="open ? '' : '新建对话'">
-        <Plus :size="18" />
-        <span v-if="open" class="sidebar__action-label">New Chat</span>
+        <span class="sidebar__action-icon"><Plus :size="18" /></span>
+        <span class="sidebar__action-label">New Chat</span>
       </button>
       <button class="sidebar__action" :class="{ 'sidebar__action--active': searchOpen }" @click="toggleSearch" :title="open ? '' : '搜索对话'">
-        <Search :size="18" />
-        <span v-if="open" class="sidebar__action-label">Search Chats</span>
+        <span class="sidebar__action-icon"><Search :size="18" /></span>
+        <span class="sidebar__action-label">Search Chats</span>
       </button>
     </div>
 
@@ -60,8 +60,8 @@
         :http-request="handleUpload"
       >
         <button class="sidebar__action sidebar__upload-trigger" :title="open ? '' : '上传文档'">
-          <UploadCloud :size="18" />
-          <span v-if="open" class="sidebar__action-label">上传文档</span>
+          <span class="sidebar__action-icon"><UploadCloud :size="18" /></span>
+          <span class="sidebar__action-label">上传文档</span>
         </button>
       </el-upload>
       <!-- 任务列表 -->
@@ -205,7 +205,7 @@ async function handleUpload(options: any) {
 /* 头部 */
 .sidebar__header {
   height: 52px;
-  padding: 0 8px 0 12px;
+  padding: 0 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -224,7 +224,7 @@ async function handleUpload(options: any) {
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.15s;
+  transition: background 0.15s, width 0.2s ease, height 0.2s ease;
 
   &:hover {
     background: var(--gray-100);
@@ -232,8 +232,8 @@ async function handleUpload(options: any) {
 }
 
 .sidebar__logo {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -249,14 +249,15 @@ async function handleUpload(options: any) {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  align-items: stretch;
 }
 
 .sidebar__action {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 12px;
+  width: 100%;
   height: 40px;
+  padding: 0;
   border: none;
   border-radius: 20px;
   background: transparent;
@@ -275,17 +276,15 @@ async function handleUpload(options: any) {
   }
 }
 
-.sidebar--collapsed .sidebar__action {
-  justify-content: center;
-  padding: 0;
+.sidebar__action-icon {
   width: 40px;
-  margin: 0 auto;
-  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar__action-label {
-  flex: 1;
-  text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -393,12 +392,6 @@ async function handleUpload(options: any) {
 
 .sidebar__upload-trigger {
   width: 100%;
-}
-
-.sidebar--collapsed .sidebar__upload-trigger {
-  width: 40px;
-  margin: 0 auto;
-  border-radius: 50%;
 }
 
 /* 任务列表 */
