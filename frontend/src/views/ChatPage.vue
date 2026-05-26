@@ -21,10 +21,6 @@
             class="msg"
             :class="'msg--' + msg.role"
           >
-            <div class="msg__avatar">
-              <Bot v-if="msg.role === 'assistant'" :size="16" />
-              <User v-else :size="16" />
-            </div>
             <div class="msg__body">
               <div class="msg__content" v-html="renderMessage(msg)"></div>
               <div v-if="msg.retrievals?.length" class="msg__retrievals">
@@ -43,9 +39,6 @@
           </div>
           <!-- 加载动画 -->
           <div v-if="chatStore.loading" class="msg msg--assistant">
-            <div class="msg__avatar">
-              <Bot :size="16" />
-            </div>
             <div class="msg__body">
               <div class="msg__dots"><span></span><span></span><span></span></div>
             </div>
@@ -82,7 +75,7 @@ import { ref, reactive, computed, nextTick, watch } from 'vue'
 import katex from 'katex'
 import { marked } from 'marked'
 import 'katex/dist/katex.min.css'
-import { Bot, User, ArrowUp, FileSearch, ChevronDown } from 'lucide-vue-next'
+import { Bot, ArrowUp, FileSearch, ChevronDown } from 'lucide-vue-next'
 import { useChatStore } from '@/stores/chat'
 import { askQuestion } from '@/apis/rag'
 
@@ -400,25 +393,15 @@ watch(() => chatStore.activeId, () => {
 /* 消息 */
 .msg {
   display: flex;
-  gap: 12px;
   margin-bottom: 24px;
 }
 
-.msg__avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: var(--gray-100);
-  color: var(--gray-500);
+.msg--user {
+  justify-content: flex-end;
 }
 
-.msg--assistant .msg__avatar {
-  background: var(--color-primary-50);
-  color: var(--color-primary-500);
+.msg--assistant {
+  justify-content: flex-start;
 }
 
 .msg__body {
@@ -459,9 +442,9 @@ watch(() => chatStore.activeId, () => {
 }
 
 .msg--user .msg__content {
-  background: var(--gray-50);
-  padding: 10px 14px;
-  border-radius: 16px 16px 4px 16px;
+  background: var(--gray-100);
+  padding: 12px 18px;
+  border-radius: 24px 24px 4px 24px;
 }
 
 .msg--assistant .msg__content {
