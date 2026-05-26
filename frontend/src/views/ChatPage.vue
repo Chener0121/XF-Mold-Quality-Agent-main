@@ -301,6 +301,15 @@ async function sendMessage() {
 }
 
 watch(() => chatStore.activeId, () => {
+  streamAbortController?.abort()
+  streamAbortController = null
+  if (rafId) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  tokenBuffer = ''
+  chatStore.loading = false
+  chatStore.streaming = false
   scrollToBottom()
 })
 

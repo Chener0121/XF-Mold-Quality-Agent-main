@@ -72,6 +72,7 @@ export const useChatStore = defineStore('chat', () => {
 
   function switchConversation(id: string) {
     activeId.value = id
+    _pendingConv = null
     save()
   }
 
@@ -91,6 +92,7 @@ export const useChatStore = defineStore('chat', () => {
 
   function goHome() {
     activeId.value = ''
+    _pendingConv = null
     save()
   }
 
