@@ -32,7 +32,7 @@ project-root/
 │   │   │       └── router.py              #   路由注册
 │   │   │
 │   │   ├── models/                        # 数据模型
-│   │   │   ├── entities/                  #   SQLAlchemy ORM（预留）
+│   │   │   ├── entities/                  #   SQLAlchemy ORM
 │   │   │   │   ├── document.py
 │   │   │   │   ├── chunk.py
 │   │   │   │   └── conversation.py
@@ -43,7 +43,7 @@ project-root/
 │   │   │       ├── conversation.py        #     会话/消息响应模型
 │   │   │       └── common.py              #     PageResponse[T] 分页泛型
 │   │   │
-│   │   ├── repositories/                  # 数据访问层（预留）
+│   │   ├── repositories/                  # 数据访问层
 │   │   │   ├── document_repository.py
 │   │   │   ├── chunk_repository.py
 │   │   │   └── conversation_repository.py
@@ -95,10 +95,9 @@ project-root/
 │   │   │       ├── chunker.py             #   语义分块（句子级拆分+重叠）
 │   │   │       └── vlm_processor.py       #   VLM 图片理解（乌龟图等）
 │   │   │
-│   │   ├── storage/                       # 存储层（预留）
+│   │   ├── storage/                       # 存储层
 │   │   │   ├── postgres/
-│   │   │   ├── pgvector/
-│   │   │   └── minio/
+│   │   │   └── pgvector/
 │   │   │
 │   │   └── utils/
 │   │       ├── file.py                    #   文件哈希
@@ -107,6 +106,10 @@ project-root/
 │   │
 │   ├── docs/
 │   │   └── api-reference.md               # API 接口文档
+│   │
+│   ├── scripts/                           # 独立工具脚本
+│   │   ├── generate_eval_dataset.py       #   检索评测数据集生成
+│   │   └── run_retrieval_eval.py          #   检索评测运行
 │   │
 │   └── tests/
 │       ├── unit/
