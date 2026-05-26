@@ -54,6 +54,7 @@ async def rag_query_stream(request: RAGQueryRequest):
 
                 # 4. 流式 pipeline
                 full_answer = ""
+                thinking_content = ""
                 tool_calls: list[dict] = []
                 token_count = 0
 
@@ -62,6 +63,8 @@ async def rag_query_stream(request: RAGQueryRequest):
                 async for event_type, data in process_stream(request.query, history):
                     if event_type == "meta":
                         data["conversation_id"] = conversation_id
+                    elif event_type == "thinking":
+                        thinking_content += data["content"]
                     elif event_type == "token":
                         full_answer += data["content"]
                         token_count += 1

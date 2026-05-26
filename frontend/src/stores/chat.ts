@@ -4,6 +4,7 @@ import { ref, computed } from 'vue'
 export interface Message {
   role: 'user' | 'assistant'
   content: string
+  thinking?: string
   retrievals?: { tool_name: string; content_preview: string }[]
 }
 
@@ -122,6 +123,15 @@ export const useChatStore = defineStore('chat', () => {
     // 不调用 save()，避免频繁写入 localStorage
   }
 
+  function appendThinkingToken(token: string) {
+    const conv = activeConversation.value || _pendingConv
+    if (!conv || conv.messages.length === 0) return
+    const lastMsg = conv.messages[conv.messages.length - 1]
+    if (lastMsg.role === 'assistant') {
+      lastMsg.thinking = (lastMsg.thinking || '') + token
+    }
+  }
+
   function updateRetrievals(retrievals: { tool_name: string; content_preview: string }[]) {
     const conv = activeConversation.value || _pendingConv
     if (!conv || conv.messages.length === 0) return
@@ -156,6 +166,7 @@ export const useChatStore = defineStore('chat', () => {
     addUserMessage,
     addAssistantMessage,
     appendStreamingToken,
+    appendThinkingToken,
     updateRetrievals,
     updateLastAssistantMessage,
   }

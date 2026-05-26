@@ -22,6 +22,13 @@
             :class="'msg--' + msg.role"
           >
             <div class="msg__body">
+              <div v-if="msg.thinking" class="msg__thinking">
+                <button class="thinking-toggle" @click="toggleThinking(idx)">
+                  <span>{{ showThinking[idx] !== false ? '收起' : '展开' }}思考过程</span>
+                  <ChevronDown :size="12" :class="{ 'retrievals-toggle__icon--open': showThinking[idx] !== false }" />
+                </button>
+                <div v-if="showThinking[idx] !== false" class="thinking-content">{{ msg.thinking }}</div>
+              </div>
               <div class="msg__content" v-html="renderMessage(msg)"></div>
               <div v-if="msg.retrievals?.length" class="msg__retrievals">
                 <button class="retrievals-toggle" @click="toggleRetrievals(idx)">
@@ -91,11 +98,16 @@ const inputText = ref('')
 const inputRef = ref<HTMLTextAreaElement>()
 const messageListRef = ref<HTMLElement>()
 const showRetrievals = reactive<Record<number, boolean>>({})
+const showThinking = reactive<Record<number, boolean>>({})
 const lineCount = ref(1)
 const welcomeInputHeight = computed(() => lineCount.value <= 1 ? 64 : Math.min(lineCount.value, 7) * 24 + 78)
 
 function toggleRetrievals(idx: number) {
   showRetrievals[idx] = !showRetrievals[idx]
+}
+
+function toggleThinking(idx: number) {
+  showThinking[idx] = !showThinking[idx]
 }
 
 function escapeHtml(text: string): string {
@@ -245,6 +257,9 @@ async function sendMessage() {
       if (!rafId) {
         rafId = requestAnimationFrame(flushTokenBuffer)
       }
+    },
+    onThinking(token) {
+      chatStore.appendThinkingToken(token)
     },
     onDone(data) {
       // 立即刷出剩余 token
@@ -556,6 +571,42 @@ onBeforeUnmount(() => {
 
 .msg--assistant .msg__content {
   padding: 0;
+}
+
+/* 思考过程 */
+.msg__thinking {
+  margin-bottom: 8px;
+}
+
+.thinking-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: 16px;
+  background: var(--main-0);
+  font-size: 12px;
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--gray-50);
+  }
+}
+
+.thinking-content {
+  margin-top: 6px;
+  padding: 8px 12px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--gray-500);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* 引用来源 */

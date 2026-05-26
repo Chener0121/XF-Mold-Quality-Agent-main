@@ -1,6 +1,7 @@
 export interface StreamCallbacks {
   onMeta: (meta: { conversation_id: string; domain: string; rewritten_query?: string | null }) => void
   onToken: (token: string) => void
+  onThinking: (token: string) => void
   onDone: (data: { tool_calls: { tool_name: string; content_preview: string }[] }) => void
   onError: (message: string) => void
 }
@@ -47,6 +48,7 @@ export function askQuestionStream(
               switch (currentEvent) {
                 case 'meta': callbacks.onMeta(data); break
                 case 'token': callbacks.onToken(data.content); break
+                case 'thinking': callbacks.onThinking(data.content); break
                 case 'done': callbacks.onDone({ tool_calls: data.tool_calls }); break
                 case 'error': callbacks.onError(data.message); break
               }

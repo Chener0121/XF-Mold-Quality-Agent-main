@@ -44,6 +44,8 @@ async def process_stream(
     async for item in agent_ask_stream(query=rewritten, domain=domain, history=history_ctx):
         if isinstance(item, dict) and item.get("__done__"):
             tool_calls = item.get("tool_calls", [])
+        elif isinstance(item, tuple) and item[0] == "thinking":
+            yield ("thinking", {"content": item[1]})
         else:
             yield ("token", {"content": item})
 
