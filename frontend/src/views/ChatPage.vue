@@ -1,8 +1,8 @@
 <template>
   <div class="chat-page">
     <!-- 标题：淡出 -->
-    <Transition name="welcome-fade">
-      <h2 v-if="!chatStore.activeConversation" class="chat-welcome__title">Ask Away</h2>
+    <Transition name="welcome-fade" appear>
+      <h2 v-if="!chatStore.activeConversation" class="chat-welcome__title">{{ welcomeText }}</h2>
     </Transition>
 
     <!-- 消息列表 -->
@@ -80,6 +80,9 @@ import { useChatStore } from '@/stores/chat'
 import { askQuestion } from '@/apis/rag'
 
 const chatStore = useChatStore()
+
+const welcomeTexts = ['Ask Away', 'Ready when you are', 'Any new ideas to explore?', 'Ask Me Anything', "what's on your mind?"]
+const welcomeText = welcomeTexts[Math.floor(Math.random() * welcomeTexts.length)]
 const inputText = ref('')
 const inputRef = ref<HTMLTextAreaElement>()
 const messageListRef = ref<HTMLElement>()
