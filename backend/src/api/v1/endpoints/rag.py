@@ -20,7 +20,7 @@ def _sse_event(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-@router.post("/completions")
+@router.post("")
 async def rag_query_stream(request: RAGQueryRequest):
     """SSE 流式 RAG 问答"""
 

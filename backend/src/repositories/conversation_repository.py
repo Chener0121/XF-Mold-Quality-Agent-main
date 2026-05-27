@@ -40,11 +40,6 @@ class ConversationRepository:
         result = await self.session.execute(stmt)
         return list(result.scalars().all()), total
 
-    async def update_title(self, conv_id: str, title: str) -> None:
-        conv = await self.get_conversation(conv_id)
-        if conv:
-            conv.title = title
-
     async def delete_conversation(self, conv_id: str) -> None:
         conv = await self.get_conversation(conv_id)
         if conv:

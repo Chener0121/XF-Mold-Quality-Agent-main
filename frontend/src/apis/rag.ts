@@ -15,7 +15,7 @@ export function askQuestionStream(
 ): AbortController {
   const controller = new AbortController()
 
-  fetch('/api/v1/chat/completions', {
+  fetch('/api/v1/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
