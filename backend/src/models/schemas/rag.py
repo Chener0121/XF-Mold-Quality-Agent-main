@@ -6,6 +6,7 @@ from src.models.schemas.conversation import ToolCallItem
 class RAGQueryRequest(BaseModel):
     query: str
     conversation_id: str | None = None
+    agent: str | None = None
 
 
 class RAGQueryResponse(BaseModel):

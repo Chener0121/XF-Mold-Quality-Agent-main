@@ -17,3 +17,15 @@ export function getTaskStatus(taskId: string) {
     status: string
   }>
 }
+
+export function listDocuments() {
+  return api.get('/documents') as Promise<{ id: string; filename: string }[]>
+}
+
+export function getAgentDocuments(agent: string) {
+  return api.get(`/documents/agents/${agent}/documents`) as Promise<string[]>
+}
+
+export function setAgentDocuments(agent: string, documentIds: string[]) {
+  return api.put(`/documents/agents/${agent}/documents`, { document_ids: documentIds }) as Promise<{ ok: boolean }>
+}

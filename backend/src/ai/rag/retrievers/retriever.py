@@ -24,12 +24,13 @@ class Retriever:
         query: str,
         top_k: int = 5,
         domain: str | None = None,
+        document_ids: list[str] | None = None,
     ) -> list[RetrievalResult]:
         """向量检索 + BM25 混合检索，RRF 融合排序"""
         fetch_k = top_k * VECTOR_CANDIDATE_MULTIPLIER
 
         # ── 1. 向量检索 ──
-        vector_hits = self._vector_search(query, fetch_k, domain)
+        vector_hits = self._vector_search(query, fetch_k, domain, document_ids)
 
         # ── 2. BM25 检索 ──
         bm25_hits = self.bm25.search(query, top_k=fetch_k)
@@ -45,12 +46,17 @@ class Retriever:
 
     def _vector_search(
         self, query: str, fetch_k: int, domain: str | None,
+        document_ids: list[str] | None = None,
     ) -> list[RetrievalResult]:
         query_embedding = self.embedder.embed([query])[0]
 
-        where_filter = None
-        if domain:
-            where_filter = {"domains": {"$contains": domain}}
+        where_filter: dict | None = None
+        if domain or document_ids:
+            where_filter = {}
+            if domain:
+                where_filter["domains"] = {"$contains": domain}
+            if document_ids:
+                where_filter["source"] = {"$in": document_ids}
 
         results = self.store.collection.query(
             query_embeddings=[query_embedding],

@@ -10,13 +10,14 @@ export function askQuestionStream(
   query: string,
   conversationId: string | undefined,
   callbacks: StreamCallbacks,
+  agent?: string,
 ): AbortController {
   const controller = new AbortController()
 
   fetch('/api/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, conversation_id: conversationId || null }),
+    body: JSON.stringify({ query, conversation_id: conversationId || null, agent: agent || 'general' }),
     signal: controller.signal,
   })
     .then(async (response) => {

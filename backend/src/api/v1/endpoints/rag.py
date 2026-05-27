@@ -8,6 +8,7 @@ from src.ai.chat.query_pipeline import process_stream
 from src.models.entities.conversation import Conversation, Message
 from src.models.schemas.rag import RAGQueryRequest
 from src.repositories.conversation_repository import ConversationRepository
+from src.repositories.document_repository import DocumentRepository
 from src.core.logger import get_logger
 
 router = APIRouter()
@@ -52,7 +53,14 @@ async def rag_query_stream(request: RAGQueryRequest):
                 # 3. 加载 history
                 history = await repo.get_history(conversation_id, limit=20)
 
-                # 4. 流式 pipeline
+                # 4. 查询智能体关联的文档（source/filename 用于 ChromaDB 过滤）
+                document_sources: list[str] | None = None
+                agent = request.agent or "general"
+                if agent != "general":
+                    doc_repo = DocumentRepository(db)
+                    document_sources = await doc_repo.get_agent_documents(agent)
+
+                # 5. 流式 pipeline
                 full_answer = ""
                 thinking_content = ""
                 tool_calls: list[dict] = []
@@ -60,7 +68,9 @@ async def rag_query_stream(request: RAGQueryRequest):
 
                 logger.info("SSE stream started: conv=%s", conversation_id[:8])
 
-                async for event_type, data in process_stream(request.query, history):
+                async for event_type, data in process_stream(
+                    request.query, history, agent=agent, document_ids=document_sources,
+                ):
                     if event_type == "meta":
                         data["conversation_id"] = conversation_id
                     elif event_type == "thinking":

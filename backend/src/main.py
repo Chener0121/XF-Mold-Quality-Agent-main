@@ -18,6 +18,7 @@ async def lifespan(_app: FastAPI):
     from src.core.dependencies import engine
     import src.models.entities.conversation  # noqa: F401
     import src.models.entities.chunk  # noqa: F401
+    import src.models.entities.agent_document  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

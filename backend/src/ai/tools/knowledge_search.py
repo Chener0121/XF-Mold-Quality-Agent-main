@@ -27,17 +27,27 @@ def _get_builder() -> ContextBuilder:
     return _builder
 
 
-def _do_search(query: str, top_k: int, domain: str | None) -> str:
+def _do_search(
+    query: str,
+    top_k: int,
+    domain: str | None,
+    document_ids: list[str] | None = None,
+) -> str:
     retriever = _get_retriever()
     builder = _get_builder()
 
-    hits = retriever.retrieve(query=query, top_k=top_k, domain=domain)
+    hits = retriever.retrieve(
+        query=query, top_k=top_k, domain=domain, document_ids=document_ids,
+    )
 
     if not hits:
         return "未找到相关文档片段。请尝试不同的查询词。"
 
     context = builder.build(hits)
-    logger.info("search: query=%r, domain=%s, top_k=%d, hits=%d", query[:50], domain, top_k, len(hits))
+    logger.info(
+        "search: query=%r, domain=%s, docs=%s, top_k=%d, hits=%d",
+        query[:50], domain, document_ids, top_k, len(hits),
+    )
     return context
 
 
@@ -51,22 +61,29 @@ class _QualitySearchInput(BaseModel):
     top_k: int = Field(default=8, description="返回结果数量")
 
 
-@tool(args_schema=_QualitySearchInput)
-def quality_search(query: str, top_k: int = 8) -> str:
-    """搜索质量管理知识库（FMEA 手册、VDA6.4 质量手册等）。
-    需要时可用不同的关键词多次调用。"""
-    return _do_search(query, top_k=top_k, domain="quality")
+def _make_tools(document_ids: list[str] | None = None):
+    """根据 document_ids 动态创建搜索工具"""
+
+    @tool(args_schema=_QualitySearchInput)
+    def quality_search(query: str, top_k: int = 8) -> str:
+        """搜索质量管理知识库（FMEA 手册、VDA6.4 质量手册等）。
+        需要时可用不同的关键词多次调用。"""
+        return _do_search(query, top_k=top_k, domain="quality", document_ids=document_ids)
+
+    @tool(args_schema=_SearchInput)
+    def rd_search(query: str, top_k: int = 5) -> str:
+        """搜索研发知识库（模具设计规范、工艺开发文档等）。
+        需要时可用不同的关键词多次调用。"""
+        return _do_search(query, top_k=top_k, domain="rd", document_ids=document_ids)
+
+    @tool(args_schema=_SearchInput)
+    def general_search(query: str, top_k: int = 5) -> str:
+        """搜索全部知识库（质量管理和研发文档）。
+        需要时可用不同的关键词多次调用。"""
+        return _do_search(query, top_k=top_k, domain=None, document_ids=document_ids)
+
+    return quality_search, rd_search, general_search
 
 
-@tool(args_schema=_SearchInput)
-def rd_search(query: str, top_k: int = 5) -> str:
-    """搜索研发知识库（模具设计规范、工艺开发文档等）。
-    需要时可用不同的关键词多次调用。"""
-    return _do_search(query, top_k=top_k, domain="rd")
-
-
-@tool(args_schema=_SearchInput)
-def general_search(query: str, top_k: int = 5) -> str:
-    """搜索全部知识库（质量管理和研发文档）。
-    需要时可用不同的关键词多次调用。"""
-    return _do_search(query, top_k=top_k, domain=None)
+# 默认工具（无 document_ids 过滤，兼容旧逻辑）
+quality_search, rd_search, general_search = _make_tools(document_ids=None)

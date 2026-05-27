@@ -41,7 +41,7 @@ class ChromaStore:
         for b in blocks:
             meta = {}
             for key in ("source", "type", "index", "page", "image_ref", "keywords",
-                         "domains", "primary_domain", "section_title"):
+                         "domains", "primary_domain", "section_title", "parent_id"):
                 if key in b.metadata and b.metadata[key] is not None:
                     val = b.metadata[key]
                     if isinstance(val, list):
@@ -56,6 +56,17 @@ class ChromaStore:
             metadatas=metadatas,
         )
         logger.info("Chroma 插入: %d 个块", len(blocks))
+
+    def list_sources(self) -> list[dict]:
+        """获取所有唯一文档来源（source）"""
+        results = self.collection.get(include=["metadatas"])
+        source_map: dict[str, int] = {}
+        if results["metadatas"]:
+            for meta in results["metadatas"]:
+                source = meta.get("source")
+                if source and source not in source_map:
+                    source_map[source] = len(source_map)
+        return [{"id": s, "filename": s} for s in source_map]
 
     def similarity_search(
         self,

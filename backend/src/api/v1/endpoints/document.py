@@ -4,12 +4,15 @@ import tempfile
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 
-from src.models.schemas.document import DocumentResponse, TaskStatusResponse
+from src.models.schemas.document import DocumentResponse, TaskStatusResponse, DocumentListItem, AgentDocumentsRequest
+from src.repositories.document_repository import DocumentRepository
+from src.core.dependencies import get_db
 from src.services.document_service import DocumentService
 from src.document.parsers.docx_parser import DocxParser
 from src.document.processors.semantic_processor import SemanticProcessor
+from src.ai.rag.vectorstores.chroma_store import ChromaStore
 
 router = APIRouter()
 
@@ -128,3 +131,26 @@ async def analyze_document(file: UploadFile):
         }
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+# ── 文档列表 ──
+
+@router.get("", response_model=list[DocumentListItem])
+async def list_documents():
+    store = ChromaStore()
+    return store.list_sources()
+
+
+# ── 智能体文档配置 ──
+
+@router.get("/agents/{agent}/documents", response_model=list[str])
+async def get_agent_documents(agent: str, db=Depends(get_db)):
+    repo = DocumentRepository(db)
+    return await repo.get_agent_documents(agent)
+
+
+@router.put("/agents/{agent}/documents")
+async def set_agent_documents(agent: str, body: AgentDocumentsRequest, db=Depends(get_db)):
+    repo = DocumentRepository(db)
+    await repo.set_agent_documents(agent, body.document_ids)
+    return {"ok": True}

@@ -80,7 +80,7 @@
     </div>
       </div>
 
-    <ConfigPanel :open="configOpen" @close="configOpen = false" />
+    <ConfigPanel :open="configOpen" :agent="currentAgent" @close="configOpen = false" />
     </div>
   </div>
 </template>
@@ -93,6 +93,7 @@ import 'katex/dist/katex.min.css'
 import { Bot, ArrowUp, FileSearch, ChevronDown } from 'lucide-vue-next'
 import { useChatStore } from '@/stores/chat'
 import { askQuestionStream } from '@/apis/rag'
+import { getAgentDocuments } from '@/apis/document'
 import Headbar from '@/components/layout/Headbar.vue'
 import ConfigPanel from '@/components/layout/ConfigPanel.vue'
 
@@ -104,6 +105,20 @@ const chatStore = useChatStore()
 
 const currentAgent = ref('general')
 const configOpen = ref(false)
+
+// 缓存每个智能体的文档配置，避免每次提问都请求
+const agentDocCache = reactive<Record<string, string[]>>({})
+async function getAgentDocIds(agent: string): Promise<string[]> {
+  if (agent in agentDocCache) return agentDocCache[agent]
+  try {
+    const ids = await getAgentDocuments(agent)
+    agentDocCache[agent] = ids
+    return ids
+  } catch {
+    agentDocCache[agent] = []
+    return []
+  }
+}
 
 const welcomeTexts = ['Ask Away', 'Ready when you are', 'Any new ideas to explore?', 'Ask Me Anything', "what's on your mind?"]
 const welcomeText = welcomeTexts[Math.floor(Math.random() * welcomeTexts.length)]
@@ -235,6 +250,23 @@ async function sendMessage() {
   const text = inputText.value.trim()
   if (!text || chatStore.loading) return
 
+  // 非通用智能体检查知识库配置
+  if (currentAgent.value !== 'general') {
+    const docIds = await getAgentDocIds(currentAgent.value)
+    if (docIds.length === 0) {
+      if (!chatStore.activeConversation) {
+        chatStore.createConversation()
+        await nextTick()
+      }
+      chatStore.addUserMessage(text)
+      inputText.value = ''
+      lineCount.value = 1
+      chatStore.addAssistantMessage('当前智能体未配置知识库，请在右侧配置页面选择文档后再提问。')
+      scrollToBottom()
+      return
+    }
+  }
+
   if (!chatStore.activeConversation) {
     chatStore.createConversation()
     await nextTick()
@@ -310,7 +342,7 @@ async function sendMessage() {
       chatStore.loading = false
       scrollToBottom()
     },
-  })
+  }, currentAgent.value)
 }
 
 watch(() => chatStore.activeId, (_newId, oldId) => {

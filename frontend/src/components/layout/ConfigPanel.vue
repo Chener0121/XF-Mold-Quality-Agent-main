@@ -21,7 +21,38 @@
 
         <section class="config-section">
           <h4 class="config-section__title">知识库</h4>
-          <p class="config-section__desc">上传的文档将自动加入当前智能体的知识库</p>
+          <p v-if="agent === 'general'" class="config-section__hint">
+            通用智能体默认包含所有文档
+          </p>
+
+          <div v-if="loading" class="config-section__loading">加载中...</div>
+          <div v-else-if="docs.length === 0" class="config-section__empty">暂无已完成的文档</div>
+          <div v-else class="config-doc-list">
+            <label
+              v-for="doc in docs"
+              :key="doc.id"
+              class="config-doc-item"
+              :class="{ 'config-doc-item--disabled': agent === 'general' }"
+            >
+              <input
+                type="checkbox"
+                :checked="agent === 'general' || selectedIds.includes(doc.id)"
+                :disabled="agent === 'general'"
+                @change="toggleDoc(doc.id)"
+              />
+              <FileText :size="14" class="config-doc-item__icon" />
+              <span class="config-doc-item__name">{{ doc.filename }}</span>
+            </label>
+          </div>
+
+          <button
+            v-if="agent !== 'general' && docs.length > 0"
+            class="config-save-btn"
+            :disabled="saving"
+            @click="saveSelection"
+          >
+            {{ saving ? '保存中...' : '保存' }}
+          </button>
         </section>
       </div>
     </div>
@@ -29,13 +60,67 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { X } from 'lucide-vue-next'
+import { ref, watch } from 'vue'
+import { X, FileText } from 'lucide-vue-next'
+import { listDocuments, getAgentDocuments, setAgentDocuments } from '@/apis/document'
 
-defineProps<{ open: boolean }>()
+const props = defineProps<{
+  open: boolean
+  agent: string
+}>()
+
 defineEmits<{ close: [] }>()
 
 const ruleText = ref('')
+const docs = ref<{ id: string; filename: string }[]>([])
+const selectedIds = ref<string[]>([])
+const loading = ref(false)
+const saving = ref(false)
+
+async function loadDocs() {
+  loading.value = true
+  try {
+    const [docList, agentDocIds] = await Promise.all([
+      listDocuments(),
+      props.agent !== 'general' ? getAgentDocuments(props.agent) : Promise.resolve([]),
+    ])
+    docs.value = docList
+    selectedIds.value = agentDocIds
+  } catch {
+    docs.value = []
+    selectedIds.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+function toggleDoc(id: string) {
+  const idx = selectedIds.value.indexOf(id)
+  if (idx >= 0) {
+    selectedIds.value.splice(idx, 1)
+  } else {
+    selectedIds.value.push(id)
+  }
+}
+
+async function saveSelection() {
+  saving.value = true
+  try {
+    await setAgentDocuments(props.agent, selectedIds.value)
+  } finally {
+    saving.value = false
+  }
+}
+
+// 面板打开时加载数据
+watch(() => props.open, (val) => {
+  if (val) loadDocs()
+})
+
+// 切换智能体时重新加载
+watch(() => props.agent, () => {
+  if (props.open) loadDocs()
+})
 </script>
 
 <style scoped lang="less">
@@ -114,11 +199,17 @@ const ruleText = ref('')
   margin: 0 0 8px;
 }
 
-.config-section__desc {
+.config-section__hint {
+  font-size: 12px;
+  color: var(--color-primary-500);
+  margin: 0 0 10px;
+}
+
+.config-section__loading,
+.config-section__empty {
   font-size: 13px;
-  color: var(--gray-500);
-  margin: 0;
-  line-height: 1.5;
+  color: var(--gray-400);
+  padding: 8px 0;
 }
 
 .config-textarea {
@@ -142,6 +233,75 @@ const ruleText = ref('')
 
   &::placeholder {
     color: var(--gray-400);
+  }
+}
+
+.config-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.config-doc-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--main-800);
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--gray-50);
+  }
+
+  &--disabled {
+    opacity: 0.7;
+    cursor: default;
+
+    &:hover {
+      background: transparent;
+    }
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--color-primary-500);
+  }
+}
+
+.config-doc-item__icon {
+  flex-shrink: 0;
+  color: var(--gray-400);
+}
+
+.config-doc-item__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.config-save-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  background: var(--main-0);
+  font-size: 13px;
+  color: var(--main-800);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover:not(:disabled) {
+    background: var(--gray-50);
+    border-color: var(--gray-300);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
 </style>
