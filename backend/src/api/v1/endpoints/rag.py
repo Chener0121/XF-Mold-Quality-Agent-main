@@ -70,6 +70,7 @@ async def rag_query_stream(request: RAGQueryRequest):
 
                 async for event_type, data in process_stream(
                     request.query, history, agent=agent, document_ids=document_sources,
+                    rules=request.rules,
                 ):
                     if event_type == "meta":
                         data["conversation_id"] = conversation_id

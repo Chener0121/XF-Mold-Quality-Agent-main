@@ -36,11 +36,11 @@ class Retriever:
         bm25_hits = self.bm25.search(query, top_k=fetch_k)
 
         # ── 3. RRF 融合 ──
-        merged = self._rrf_merge(vector_hits, bm25_hits, top_k, domain)
+        merged = self._rrf_merge(vector_hits, bm25_hits, top_k, domain, document_ids)
 
         logger.info(
-            "混合检索完成: query=%r, domain=%s, vector=%d, bm25=%d, merged=%d",
-            query[:50], domain, len(vector_hits), len(bm25_hits), len(merged),
+            "混合检索完成: query=%r, domain=%s, docs=%s, vector=%d, bm25=%d, merged=%d",
+            query[:50], domain, document_ids, len(vector_hits), len(bm25_hits), len(merged),
         )
         return merged
 
@@ -94,6 +94,7 @@ class Retriever:
         bm25_hits: list[tuple[str, float]],
         top_k: int,
         domain: str | None,
+        document_ids: list[str] | None = None,
     ) -> list[RetrievalResult]:
         """Reciprocal Rank Fusion: score = sum(1/(k + rank)) for each retrieval source"""
         rrf_scores: dict[str, float] = {}
@@ -102,8 +103,13 @@ class Retriever:
         for rank, hit in enumerate(vector_hits):
             rrf_scores[hit.block_id] = rrf_scores.get(hit.block_id, 0) + 1.0 / (RRF_K + rank + 1)
 
-        # BM25 排名
-        for rank, (doc_id, _score) in enumerate(bm25_hits):
+        # BM25 排名（过滤掉不属于允许文档的 chunk）
+        if document_ids:
+            bm25_allowed = self._filter_bm25_by_docs(bm25_hits, document_ids)
+        else:
+            bm25_allowed = bm25_hits
+
+        for rank, (doc_id, _score) in enumerate(bm25_allowed):
             rrf_scores[doc_id] = rrf_scores.get(doc_id, 0) + 1.0 / (RRF_K + rank + 1)
 
         # 按融合分数排序
@@ -126,6 +132,16 @@ class Retriever:
                 results.append(hit)
 
         return results
+
+    def _filter_bm25_by_docs(
+        self, bm25_hits: list[tuple[str, float]], document_ids: list[str],
+    ) -> list[tuple[str, float]]:
+        """过滤 BM25 结果，只保留属于允许文档的 chunks"""
+        source_map = self.bm25.get_source_map()
+        return [
+            (doc_id, score) for doc_id, score in bm25_hits
+            if source_map.get(doc_id) in document_ids
+        ]
 
     def _fetch_by_ids(self, ids: list[str], domain: str | None) -> dict[str, RetrievalResult]:
         """根据 id 列表从 Chroma 补充完整信息"""

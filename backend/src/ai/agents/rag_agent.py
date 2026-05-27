@@ -28,31 +28,40 @@ _AGENT_CONFIG = {
 }
 
 
-def _get_agent(domain: str | None, document_ids: list[str] | None = None) -> CompiledStateGraph:
+def _get_agent(
+    domain: str | None,
+    document_ids: list[str] | None = None,
+    rules: str | None = None,
+) -> CompiledStateGraph:
     key = domain if domain in _AGENT_CONFIG else "general"
+    cfg = _AGENT_CONFIG[key]
+
+    prompt = cfg["prompt"]
+    if rules and rules.strip():
+        prompt = f"{prompt}\n\n用户自定义规则：\n{rules.strip()}"
 
     # 有 document_ids 时动态创建带过滤的工具
     if document_ids:
         q_tool, r_tool, g_tool = _make_tools(document_ids=document_ids)
         tool = {"quality": q_tool, "rd": r_tool, "general": g_tool}.get(key, g_tool)
-        agent_key = f"{key}_filtered_{hash(tuple(document_ids))}"
+        agent_key = f"{key}_filtered_{hash(tuple(document_ids))}_{hash(prompt)}"
         if agent_key not in _agents:
-            cfg = _AGENT_CONFIG[key]
             _agents[agent_key] = create_react_agent(
                 model=get_streaming_chat_llm(),
                 tools=[tool],
-                prompt=cfg["prompt"],
+                prompt=prompt,
             )
         return _agents[agent_key]
 
-    if key not in _agents:
-        cfg = _AGENT_CONFIG[key]
+    agent_key = f"{key}_{hash(prompt)}"
+    if agent_key not in _agents:
         _agents[key] = create_react_agent(
             model=get_streaming_chat_llm(),
             tools=cfg["tools"],
-            prompt=cfg["prompt"],
+            prompt=prompt,
         )
-    return _agents[key]
+        _agents[agent_key] = _agents[key]
+    return _agents[agent_key]
 
 
 def _build_messages(query: str, history: list[dict] | None = None) -> list:
@@ -70,13 +79,13 @@ def _build_messages(query: str, history: list[dict] | None = None) -> list:
 
 async def ask_stream(
     query: str, domain: str | None = None, history: list[dict] | None = None,
-    document_ids: list[str] | None = None,
+    document_ids: list[str] | None = None, rules: str | None = None,
 ) -> AsyncGenerator[str | dict, None]:
     """
     流式调用 RAG Agent。
     逐 token yield 字符串，流结束后 yield {"__done__": True, "tool_calls": [...]}。
     """
-    agent = _get_agent(domain, document_ids=document_ids)
+    agent = _get_agent(domain, document_ids=document_ids, rules=rules)
     messages = _build_messages(query, history)
 
     tool_calls: list[dict] = []

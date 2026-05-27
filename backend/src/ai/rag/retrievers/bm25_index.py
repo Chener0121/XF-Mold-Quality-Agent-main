@@ -66,3 +66,11 @@ class BM25Index:
     @property
     def doc_count(self) -> int:
         return self._doc_count
+
+    def get_source_map(self) -> dict[str, str]:
+        """返回 {chunk_id: source} 映射，用于按文档过滤 BM25 结果"""
+        self._ensure_loaded()
+        return {
+            self._ids[i]: self._metadatas[i].get("source", "")
+            for i in range(len(self._ids))
+        }

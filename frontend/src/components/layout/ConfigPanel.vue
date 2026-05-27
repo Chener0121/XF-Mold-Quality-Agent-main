@@ -69,13 +69,34 @@ const props = defineProps<{
   agent: string
 }>()
 
-defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: [] }>()
 
 const ruleText = ref('')
 const docs = ref<{ id: string; filename: string }[]>([])
 const selectedIds = ref<string[]>([])
 const loading = ref(false)
 const saving = ref(false)
+
+const RULES_KEY = 'agent_rules'
+
+function loadRules() {
+  try {
+    const all = JSON.parse(localStorage.getItem(RULES_KEY) || '{}')
+    ruleText.value = all[props.agent] || ''
+  } catch {
+    ruleText.value = ''
+  }
+}
+
+function saveRules() {
+  try {
+    const all = JSON.parse(localStorage.getItem(RULES_KEY) || '{}')
+    all[props.agent] = ruleText.value
+    localStorage.setItem(RULES_KEY, JSON.stringify(all))
+  } catch { /* ignore */ }
+}
+
+watch(ruleText, saveRules)
 
 async function loadDocs() {
   loading.value = true
@@ -114,12 +135,16 @@ async function saveSelection() {
 
 // 面板打开时加载数据
 watch(() => props.open, (val) => {
-  if (val) loadDocs()
+  if (val) {
+    loadDocs()
+    loadRules()
+  }
 })
 
 // 切换智能体时重新加载
 watch(() => props.agent, () => {
   if (props.open) loadDocs()
+  loadRules()
 })
 </script>
 

@@ -286,6 +286,13 @@ async function sendMessage() {
 
   const convId = chatStore.activeId || undefined
 
+  // 读取当前智能体的自定义规则
+  let rules: string | undefined
+  try {
+    const all = JSON.parse(localStorage.getItem('agent_rules') || '{}')
+    rules = all[currentAgent.value] || undefined
+  } catch { /* ignore */ }
+
   streamAbortController = askQuestionStream(text, convId, {
     onMeta(meta) {
       if (!chatStore.activeId) {
@@ -342,7 +349,7 @@ async function sendMessage() {
       chatStore.loading = false
       scrollToBottom()
     },
-  }, currentAgent.value)
+  }, currentAgent.value, rules)
 }
 
 watch(() => chatStore.activeId, (_newId, oldId) => {

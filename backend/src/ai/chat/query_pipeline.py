@@ -17,6 +17,7 @@ async def process_stream(
     history: list[Message],
     agent: str | None = None,
     document_ids: list[str] | None = None,
+    rules: str | None = None,
 ) -> AsyncGenerator[tuple[str, dict], None]:
     """
     流式 query 处理 pipeline:
@@ -45,7 +46,7 @@ async def process_stream(
     tool_calls: list[dict] = []
     async for item in agent_ask_stream(
         query=rewritten, domain=domain, history=history_ctx,
-        document_ids=document_ids,
+        document_ids=document_ids, rules=rules,
     ):
         if isinstance(item, dict) and item.get("__done__"):
             tool_calls = item.get("tool_calls", [])

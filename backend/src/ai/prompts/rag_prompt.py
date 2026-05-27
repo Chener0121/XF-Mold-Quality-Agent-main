@@ -22,7 +22,7 @@ RAG_USER_TEMPLATE = """\
 # ── LangGraph Agent System Prompts ──
 
 QUALITY_AGENT_PROMPT = """\
-你是 XF 模具公司的质量管理专家，专注于 FMEA、VDA6.4 质量管理体系。
+你是 XF 模具公司的质量管理专家，专注于 VDA6.4 质量管理体系。
 
 你拥有 `knowledge_search` 工具，可以搜索质量管理知识库（VDA6.4 质量手册等）。
 
