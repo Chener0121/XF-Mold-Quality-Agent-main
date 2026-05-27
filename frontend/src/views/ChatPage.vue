@@ -80,7 +80,7 @@
     </div>
       </div>
 
-    <ConfigPanel :open="configOpen" :agent="currentAgent" @close="configOpen = false" />
+    <ConfigPanel :open="configOpen" :agent="currentAgent" @close="configOpen = false" @saved="clearAgentDocCache" />
     </div>
   </div>
 </template>
@@ -118,6 +118,10 @@ async function getAgentDocIds(agent: string): Promise<string[]> {
     agentDocCache[agent] = []
     return []
   }
+}
+
+function clearAgentDocCache() {
+  delete agentDocCache[currentAgent.value]
 }
 
 const welcomeTexts = ['Ask Away', 'Ready when you are', 'Any new ideas to explore?', 'Ask Me Anything', "what's on your mind?"]

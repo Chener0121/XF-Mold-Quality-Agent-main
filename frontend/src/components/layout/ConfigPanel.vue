@@ -69,7 +69,7 @@ const props = defineProps<{
   agent: string
 }>()
 
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: []; saved: [] }>()
 
 const ruleText = ref('')
 const docs = ref<{ id: string; filename: string }[]>([])
@@ -128,6 +128,7 @@ async function saveSelection() {
   saving.value = true
   try {
     await setAgentDocuments(props.agent, selectedIds.value)
+    emit('saved')
   } finally {
     saving.value = false
   }
