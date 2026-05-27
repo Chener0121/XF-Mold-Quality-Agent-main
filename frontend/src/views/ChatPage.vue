@@ -300,7 +300,9 @@ async function sendMessage() {
   })
 }
 
-watch(() => chatStore.activeId, () => {
+watch(() => chatStore.activeId, (_newId, oldId) => {
+  // 新会话回填 ID（'' → serverId）不应中断正在进行的流
+  if (!oldId && _newId) return
   streamAbortController?.abort()
   streamAbortController = null
   if (rafId) {
