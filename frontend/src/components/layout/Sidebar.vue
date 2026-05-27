@@ -147,6 +147,10 @@ try {
     const active = saved.filter(t => t.status === 'processing' || t.status === 'failed')
     const done = saved.filter(t => t.status === 'completed').slice(0, 20)
     tasks.value = [...active, ...done]
+    // 对仍在处理中的任务重新开始轮询
+    for (const t of active) {
+      if (t.status === 'processing') startPolling(t.task_id)
+    }
   }
 } catch { /* ignore */ }
 
@@ -174,6 +178,13 @@ function startPolling(taskId: string) {
         timers.delete(taskId)
       }
     } catch {
+      // 后端可能已重启丢失任务，标记为失败
+      const task = tasks.value.find(t => t.task_id === taskId)
+      if (task && task.status === 'processing') {
+        task.status = 'failed'
+        task.stage = 'failed'
+        saveTasks()
+      }
       clearInterval(timer)
       timers.delete(taskId)
     }
