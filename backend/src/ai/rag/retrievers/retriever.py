@@ -51,12 +51,15 @@ class Retriever:
         query_embedding = self.embedder.embed([query])[0]
 
         where_filter: dict | None = None
-        if domain or document_ids:
-            where_filter = {}
-            if domain:
-                where_filter["domains"] = {"$contains": domain}
-            if document_ids:
-                where_filter["source"] = {"$in": document_ids}
+        conditions: list[dict] = []
+        if domain:
+            conditions.append({"domains": {"$contains": domain}})
+        if document_ids:
+            conditions.append({"source": {"$in": document_ids}})
+        if len(conditions) == 1:
+            where_filter = conditions[0]
+        elif len(conditions) > 1:
+            where_filter = {"$and": conditions}
 
         results = self.store.collection.query(
             query_embeddings=[query_embedding],
