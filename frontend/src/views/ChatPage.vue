@@ -1,8 +1,9 @@
 <template>
   <div class="chat-page">
-    <Headbar v-model="currentAgent" />
+    <Headbar v-model="currentAgent" @toggle-config="configOpen = !configOpen" />
 
     <div class="chat-body">
+      <div class="chat-body__main">
       <!-- 标题：淡出 -->
       <Transition name="welcome-fade" appear>
         <h2 v-if="!chatStore.activeConversation" class="chat-welcome__title">{{ welcomeText }}</h2>
@@ -77,6 +78,9 @@
       </div>
       <p class="chat-input__disclaimer">内容由 AI 生成，请仔细甄别</p>
     </div>
+      </div>
+
+    <ConfigPanel :open="configOpen" @close="configOpen = false" />
     </div>
   </div>
 </template>
@@ -90,6 +94,7 @@ import { Bot, ArrowUp, FileSearch, ChevronDown } from 'lucide-vue-next'
 import { useChatStore } from '@/stores/chat'
 import { askQuestionStream } from '@/apis/rag'
 import Headbar from '@/components/layout/Headbar.vue'
+import ConfigPanel from '@/components/layout/ConfigPanel.vue'
 
 // ── 流式 token 批量合并 ──
 let tokenBuffer = ''
@@ -98,6 +103,7 @@ let rafId: number | null = null
 const chatStore = useChatStore()
 
 const currentAgent = ref('general')
+const configOpen = ref(false)
 
 const welcomeTexts = ['Ask Away', 'Ready when you are', 'Any new ideas to explore?', 'Ask Me Anything', "what's on your mind?"]
 const welcomeText = welcomeTexts[Math.floor(Math.random() * welcomeTexts.length)]
@@ -341,8 +347,16 @@ onBeforeUnmount(() => {
 
 .chat-body {
   flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.chat-body__main {
+  flex: 1;
   position: relative;
   overflow: hidden;
+  min-width: 0;
+  transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ===== 标题 ===== */

@@ -1,6 +1,7 @@
 <template>
   <header class="chat-headbar">
-    <div class="headbar-agent-selector" @click.stop="toggleMenu">
+    <div class="headbar-left">
+      <div class="headbar-agent-selector" @click.stop="toggleMenu">
       <component :is="currentIcon" :size="16" />
       <span>{{ currentLabel }}</span>
       <ChevronDown :size="14" class="headbar-arrow" :class="{ 'headbar-arrow--open': showMenu }" />
@@ -17,12 +18,18 @@
         <Check v-if="modelValue === opt.value" :size="14" class="headbar-dropdown__check" />
       </li>
     </ul>
+    </div>
+    <div class="headbar-right">
+      <button class="headbar-config-btn" @click="$emit('toggleConfig')">
+        <Settings :size="16" />
+      </button>
+    </div>
   </header>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { ChevronDown, Bot, ShieldCheck, Wrench, Check } from 'lucide-vue-next'
+import { ChevronDown, Bot, ShieldCheck, Wrench, Check, Settings } from 'lucide-vue-next'
 
 const options = [
   { value: 'general', label: '模具通用智能体', icon: Bot },
@@ -31,7 +38,10 @@ const options = [
 ]
 
 const props = defineProps<{ modelValue: string }>()
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+  toggleConfig: []
+}>()
 
 const showMenu = ref(false)
 
@@ -65,11 +75,35 @@ onBeforeUnmount(() => document.removeEventListener('click', closeMenu))
   height: 52px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 24px;
   border-bottom: 1px solid var(--gray-200);
   position: relative;
   background: var(--main-0);
   flex-shrink: 0;
+}
+
+.headbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.headbar-config-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--main-800);
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--gray-50);
+  }
 }
 
 .headbar-agent-selector {
