@@ -1,14 +1,17 @@
 <template>
   <div class="chat-page">
-    <!-- 标题：淡出 -->
-    <Transition name="welcome-fade" appear>
-      <h2 v-if="!chatStore.activeConversation" class="chat-welcome__title">{{ welcomeText }}</h2>
-    </Transition>
+    <Headbar v-model="currentAgent" />
 
-    <!-- 消息列表 -->
-    <Transition name="messages-fade">
-      <div v-if="chatStore.activeConversation" ref="messageListRef" class="chat-messages">
-        <div class="chat-messages__inner">
+    <div class="chat-body">
+      <!-- 标题：淡出 -->
+      <Transition name="welcome-fade" appear>
+        <h2 v-if="!chatStore.activeConversation" class="chat-welcome__title">{{ welcomeText }}</h2>
+      </Transition>
+
+      <!-- 消息列表 -->
+      <Transition name="messages-fade">
+        <div v-if="chatStore.activeConversation" ref="messageListRef" class="chat-messages">
+          <div class="chat-messages__inner">
           <div v-if="chatStore.activeConversation.messages.length === 0" class="chat-empty">
             <div class="chat-empty__inner">
               <Bot :size="28" />
@@ -74,6 +77,7 @@
       </div>
       <p class="chat-input__disclaimer">内容由 AI 生成，请仔细甄别</p>
     </div>
+    </div>
   </div>
 </template>
 
@@ -85,12 +89,15 @@ import 'katex/dist/katex.min.css'
 import { Bot, ArrowUp, FileSearch, ChevronDown } from 'lucide-vue-next'
 import { useChatStore } from '@/stores/chat'
 import { askQuestionStream } from '@/apis/rag'
+import Headbar from '@/components/layout/Headbar.vue'
 
 // ── 流式 token 批量合并 ──
 let tokenBuffer = ''
 let rafId: number | null = null
 
 const chatStore = useChatStore()
+
+const currentAgent = ref('general')
 
 const welcomeTexts = ['Ask Away', 'Ready when you are', 'Any new ideas to explore?', 'Ask Me Anything', "what's on your mind?"]
 const welcomeText = welcomeTexts[Math.floor(Math.random() * welcomeTexts.length)]
@@ -328,12 +335,20 @@ onBeforeUnmount(() => {
   height: 100vh;
   background: var(--main-0);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-body {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
 }
 
 /* ===== 标题 ===== */
 .chat-welcome__title {
   position: absolute;
-  top: 38%;
+  top: calc(38vh - 52px);
   left: 50%;
   transform: translateX(-50%);
   font-size: 32px;
@@ -359,9 +374,9 @@ onBeforeUnmount(() => {
               padding 0.5s ease,
               border-color 0.3s ease;
 
-  /* 欢迎模式：居中偏下 */
+  /* 欢迎模式：视口居中 */
   &:not(.chat-input-container--docked) {
-    top: 50%;
+    top: calc(50vh - 52px);
   }
 
   /* 聊天模式：底部，保持同样的宽度 */
